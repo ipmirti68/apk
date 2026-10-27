@@ -1,82 +1,137 @@
-package com.mirti.tv
+package com.mirti.tv;
 
-import android.net.Uri
-import android.os.Bundle
-import android.view.View
-import android.webkit.JavascriptInterface
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import androidx.appcompat.app.AppCompatActivity
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.ui.PlayerView
+import android.os.Bundle;
+import android.view.View;
+import android.webkit.JavascriptInterface;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.ui.PlayerView;
 
-class MainActivity : AppCompatActivity() {
-    private lateinit var webView: WebView
-    private lateinit var playerView: PlayerView
-    private lateinit var exoPlayer: ExoPlayer
+public class MainActivity extends AppCompatActivity {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+    private WebView webView;
+    private PlayerView playerView;
+    private ExoPlayer player;
+    
+    // Resimler
+    private static final String MAIN_SCREEN = "https://raw.githubusercontent.com/ipmirti68/-ptv-/refs/heads/main/IMG-20261017-WA0045.jpg";
+    public static final String RADIO_BG = "https://raw.githubusercontent.com/ipmirti68/-ptv-/refs/heads/main/file_000000003b08820a96dea4b438a874d6.png";
 
-        webView = findViewById(R.id.webview)
-        playerView = findViewById(R.id.playerView)
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        webView = findViewById(R.id.webView);
+        playerView = findViewById(R.id.playerView);
+
+        WebSettings ws = webView.getSettings();
+        ws.setJavaScriptEnabled(true);
+        ws.setDomStorageEnabled(true);
+        ws.setAllowFileAccess(true);
+        ws.setMediaPlaybackRequiresUserGesture(false);
+
+        webView.setWebViewClient(new WebViewClient());
+        webView.addJavascriptInterface(new MirtiAppInterface(), "MirtiApp");
         
-        exoPlayer = ExoPlayer.Builder(this).build()
-        playerView.player = exoPlayer
-
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.settings.allowFileAccess = true
-        webView.settings.mediaPlaybackRequiresUserGesture = false
-
-        // APK olduğunu siteye söyle - ÇOKLU İSİM DESTEĞİ
-        webView.addJavascriptInterface(this, "MirtiApp")
-        webView.addJavascriptInterface(this, "AndroidPlayer")
-
-        webView.webViewClient = WebViewClient()
-        webView.loadUrl("https://ipmirti68.github.io/-ptv-/")
+        // Senin GitHub sayfanı yükle
+        webView.loadUrl("https://ipmirti68.github.io/-p/");
     }
 
-    // Yeni versiyon (title'lı) - HTML bunu çağırıyor
-    @JavascriptInterface
-    fun playVideo(url: String, title: String) {
-        runOnUiThread { playWithExoPlayer(url) }
-    }
+    public class MirtiAppInterface {
+        
+        @JavascriptInterface
+        public void playVideo(String url, String title) {
+            runOnUiThread(() -> {
+                if (url == null) return;
+                
+                String lowerTitle = title != null ? title.toLowerCase() : "";
+                String lowerUrl = url.toLowerCase();
+                
+                boolean isRadio = lowerTitle.contains("radyo") 
+                        || lowerTitle.contains("radio")
+                        || lowerUrl.contains("radio=true")
+                        || lowerUrl.endsWith(".mp3")
+                        || lowerUrl.contains("/radio/")
+                        || lowerUrl.contains("radyo");
 
-    // Eski versiyon için de destek (tek parametre)
-    @JavascriptInterface
-    fun playVideo(url: String) {
-        runOnUiThread { playWithExoPlayer(url) }
-    }
-
-    @JavascriptInterface
-    fun play(url: String) {
-        runOnUiThread { playWithExoPlayer(url) }
-    }
-
-    private fun playWithExoPlayer(url: String) {
-        try {
-            val cleanUrl = url.trim()
-            val mediaItem = MediaItem.fromUri(Uri.parse(cleanUrl))
-            exoPlayer.setMediaItem(mediaItem)
-            exoPlayer.prepare()
-            exoPlayer.play()
-            playerView.visibility = View.VISIBLE
-        } catch (e: Exception) {
-            e.printStackTrace()
+                if (isRadio) {
+                    playRadio(url, title);
+                } else {
+                    playTv(url, title);
+                }
+            });
         }
     }
 
-    override fun onBackPressed() {
-        if (playerView.visibility == View.VISIBLE) {
-            playerView.visibility = View.GONE
-            exoPlayer.stop()
-        } else if (webView.canGoBack()) {
-            webView.goBack()
+    private void playRadio(String url, String title) {
+        // 1. WebView'de radyo resmini göster
+        String safeTitle = title != null ? title.replace("'", "").replace("\"", "") : "Radyo";
+        String js = "javascript:(function(){"
+                + "var img=document.getElementById('idleImg'); if(img) img.src='" + RADIO_BG + "';"
+                + "var idle=document.getElementById('idle'); if(idle) idle.style.display='flex';"
+                + "var video=document.getElementById('video'); if(video){ video.pause(); video.style.display='none'; }"
+                + "var rInfo=document.getElementById('radioInfo'); if(rInfo) rInfo.style.display='block';"
+                + "var rTitle=document.getElementById('rTitle'); if(rTitle) rTitle.innerText='" + safeTitle + "';"
+                + "var epg=document.getElementById('epgNow'); if(epg) epg.innerText='📻 '+ '" + safeTitle + "';"
+                + "})()";
+        webView.evaluateJavascript(js, null);
+
+        // 2. ExoPlayer sadece ses çalsın, video view gizli kalsın
+        if (player != null) {
+            player.release();
+        }
+        playerView.setVisibility(View.GONE);
+        
+        player = new ExoPlayer.Builder(this).build();
+        MediaItem item = MediaItem.fromUri(url);
+        player.setMediaItem(item);
+        player.prepare();
+        player.setPlayWhenReady(true);
+    }
+
+    private void playTv(String url, String title) {
+        // 1. WebView idle gizle
+        webView.evaluateJavascript("javascript:(function(){var i=document.getElementById('idle'); if(i) i.style.display='none'; var v=document.getElementById('video'); if(v){ v.style.display='none'; }})()", null);
+        
+        // 2. ExoPlayer video aç
+        if (player != null) {
+            player.release();
+        }
+        playerView.setVisibility(View.VISIBLE);
+        playerView.setPlayer(null);
+        
+        player = new ExoPlayer.Builder(this).build();
+        playerView.setPlayer(player);
+        
+        MediaItem item = MediaItem.fromUri(url);
+        player.setMediaItem(item);
+        player.prepare();
+        player.setPlayWhenReady(true);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (player != null) {
+            player.release();
+            player = null;
+        }
+        if (webView != null) {
+            webView.destroy();
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (webView.canGoBack()) {
+            webView.goBack();
         } else {
-            super.onBackPressed()
+            super.onBackPressed();
         }
     }
 }
