@@ -2,6 +2,8 @@ package com.mirti.tv
 
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
@@ -26,35 +28,55 @@ class MainActivity : AppCompatActivity() {
 
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
-        
-        // APK olduğunu siteye söyle
+        webView.settings.allowFileAccess = true
+        webView.settings.mediaPlaybackRequiresUserGesture = false
+
+        // APK olduğunu siteye söyle - ÇOKLU İSİM DESTEĞİ
         webView.addJavascriptInterface(this, "MirtiApp")
+        webView.addJavascriptInterface(this, "AndroidPlayer")
 
-        webView.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
-                // index.html içinden gelen video url'lerini yakala
-                if (url.contains(".m3u8") || url.contains("output=ts") || url.contains(".mp4")) {
-                    playWithExoPlayer(url)
-                    return true
-                }
-                return false
-            }
-        }
-
+        webView.webViewClient = WebViewClient()
         webView.loadUrl("https://ipmirti68.github.io/-ptv-/")
     }
 
-    @android.webkit.JavascriptInterface
+    // Yeni versiyon (title'lı) - HTML bunu çağırıyor
+    @JavascriptInterface
+    fun playVideo(url: String, title: String) {
+        runOnUiThread { playWithExoPlayer(url) }
+    }
+
+    // Eski versiyon için de destek (tek parametre)
+    @JavascriptInterface
     fun playVideo(url: String) {
         runOnUiThread { playWithExoPlayer(url) }
     }
 
+    @JavascriptInterface
+    fun play(url: String) {
+        runOnUiThread { playWithExoPlayer(url) }
+    }
+
     private fun playWithExoPlayer(url: String) {
-        // PROXY YOK - Direk cihaz IP'si ile oyna (TR kilidi kalkar)
-        val mediaItem = MediaItem.fromUri(Uri.parse(url))
-        exoPlayer.setMediaItem(mediaItem)
-        exoPlayer.prepare()
-        exoPlayer.play()
-        playerView.visibility = android.view.View.VISIBLE
+        try {
+            val cleanUrl = url.trim()
+            val mediaItem = MediaItem.fromUri(Uri.parse(cleanUrl))
+            exoPlayer.setMediaItem(mediaItem)
+            exoPlayer.prepare()
+            exoPlayer.play()
+            playerView.visibility = View.VISIBLE
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override fun onBackPressed() {
+        if (playerView.visibility == View.VISIBLE) {
+            playerView.visibility = View.GONE
+            exoPlayer.stop()
+        } else if (webView.canGoBack()) {
+            webView.goBack()
+        } else {
+            super.onBackPressed()
+        }
     }
 }
