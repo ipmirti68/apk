@@ -3,6 +3,7 @@ name: Build APK
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -15,19 +16,18 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: gradle
           
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        
       - name: Make gradlew executable
         run: chmod +x apk/gradlew
 
       - name: Build APK
         working-directory: ./apk
-        run: ./gradlew assembleDebug
-          
+        run: ./gradlew assembleDebug --stacktrace
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Mirti-TV-APK
           path: apk/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
