@@ -1,6 +1,30 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.mirti.tv'
+    compileSdk 34
+    defaultConfig {
+        applicationId "com.mirti.tv"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
     implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
-    implementation 'org.videolan.android:libvlc-all:3.6.0'
-    implementation 'com.github.Justson.AgentWeb:agentweb:4.1.9'
 }
