@@ -1,0 +1,2406 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+<title>Vizion Box</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mpegts.js/1.7.3/mpegts.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090e; --s1:#0b1018; --s2:#0f1520; --s3:#141c2a; --s4:#1a2335;
+  --bd:#1d2333; --bd2:#263444;
+  --acc:#00d4ff; --acc2:#ff3e3e; --acc3:#ffb800; --acc4:#00ff88;
+  --txt:#dde2f0; --txt2:#8899bb; --txt3:#4a5468;
+  --glow:rgba(0,212,255,.35); --glowr:rgba(255,62,62,.35);
+  --fd:'Barlow Condensed',sans-serif; --fb:'Barlow',sans-serif;
+  --r:8px; --r2:12px; --hw:62px; --sw:280px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:var(--fb);}
+button{cursor:pointer;font-family:var(--fb);}
+input,select{font-family:var(--fb);}
+*{scrollbar-width:thin;scrollbar-color:var(--bd) transparent;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px;}
+
+/* ── SCREENS ── */
+.screen{display:none;width:100%;height:100%;position:fixed;inset:0;z-index:1;}
+.screen.on{display:flex;flex-direction:column;}
+
+/* ══════════════════════════════════════════
+   AUTH
+══════════════════════════════════════════ */
+#sAuth{align-items:center;justify-content:center;background:var(--bg);}
+.auth-box{
+  width:400px;max-width:95vw;
+  background:var(--s1);border:1px solid var(--bd);border-radius:16px;
+  padding:32px 28px;
+  box-shadow:0 0 0 1px rgba(0,212,255,.08),0 40px 80px rgba(0,0,0,.7);
+}
+.auth-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px;}
+.auth-logo-mark{
+  width:42px;height:42px;border-radius:12px;
+  background:linear-gradient(135deg,var(--acc),#0066ff);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  box-shadow:0 0 24px var(--glow);animation:ap 2.5s ease-in-out infinite;
+}
+@keyframes ap{0%,100%{box-shadow:0 0 24px var(--glow)}50%{box-shadow:0 0 44px rgba(0,212,255,.6)}}
+.auth-logo-txt{
+  font-family:var(--fd);font-size:28px;font-weight:800;letter-spacing:2px;
+  background:linear-gradient(90deg,#fff,var(--acc));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.auth-tabs{display:flex;border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+.auth-tab{flex:1;padding:9px;border:none;background:transparent;color:var(--txt2);font-family:var(--fd);font-size:15px;font-weight:600;letter-spacing:.5px;transition:all .2s;}
+.auth-tab.on{background:var(--s3);color:var(--acc);}
+.auth-form{display:none;}
+.auth-form.on{display:block;}
+.fg{margin-bottom:11px;}
+.fg label{display:block;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);margin-bottom:4px;}
+.fg input{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:10px 12px;color:var(--txt);font-size:13px;outline:none;transition:border-color .2s;}
+.fg input:focus{border-color:var(--acc);}
+.fg input::placeholder{color:var(--txt3);}
+.auth-btn{width:100%;padding:12px;border:none;border-radius:var(--r);background:linear-gradient(135deg,var(--acc),#0066ff);color:#000;font-family:var(--fd);font-size:17px;font-weight:800;letter-spacing:1px;transition:all .2s;box-shadow:0 0 18px var(--glow);margin-top:4px;}
+.auth-btn:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(0,212,255,.6);}
+.auth-err{background:rgba(255,62,62,.1);border:1px solid rgba(255,62,62,.3);border-radius:var(--r);padding:8px 12px;font-size:12px;color:var(--acc2);margin-top:8px;display:none;}
+.auth-guest{text-align:center;margin-top:12px;font-size:11px;color:var(--txt3);}
+.auth-guest a{color:var(--acc);text-decoration:underline;cursor:pointer;}
+
+/* ══════════════════════════════════════════
+   APP LAYOUT
+══════════════════════════════════════════ */
+#sApp{flex-direction:column;}
+
+/* HEADER */
+.hdr{
+  height:var(--hw);flex-shrink:0;
+  display:flex;align-items:center;gap:4px;padding:0 14px;
+  background:rgba(7,9,14,.97);border-bottom:1px solid var(--bd);
+  position:relative;z-index:50;
+}
+.hdr::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc2),var(--acc),var(--acc3),var(--acc4));}
+.hdr-logo{display:flex;align-items:center;gap:8px;margin-right:10px;flex-shrink:0;}
+.hdr-logo-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--acc),#0055cc);display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 16px var(--glow);animation:ap 2.5s ease-in-out infinite;}
+.hdr-logo-txt{font-family:var(--fd);font-size:20px;font-weight:800;letter-spacing:2px;background:linear-gradient(90deg,#fff,var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hdr-nav{display:flex;align-items:center;gap:2px;flex:1;overflow-x:auto;}
+.hdr-nav::-webkit-scrollbar{height:0;}
+.nav-tab{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--r);border:none;background:transparent;color:var(--txt2);font-family:var(--fd);font-size:14px;font-weight:600;letter-spacing:.3px;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+.nav-tab:hover{background:var(--s2);color:var(--txt);}
+.nav-tab.on{background:var(--s3);color:var(--acc);}
+.nav-tab svg{width:14px;height:14px;}
+.hdr-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0;}
+.hdr-live{display:flex;align-items:center;gap:5px;background:rgba(255,62,62,.1);border:1px solid rgba(255,62,62,.25);border-radius:20px;padding:4px 10px;font-family:var(--fd);font-size:12px;font-weight:700;color:var(--acc2);}
+.hdr-live .dot{width:6px;height:6px;border-radius:50%;background:var(--acc2);animation:bl 1.1s ease-in-out infinite;}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
+.hdr-clock{font-family:var(--fd);font-size:15px;color:var(--txt2);font-variant-numeric:tabular-nums;}
+.hdr-user{display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--bd);border-radius:20px;padding:4px 10px 4px 4px;cursor:pointer;transition:all .2s;}
+.hdr-user:hover{border-color:var(--acc);}
+.hdr-av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc3));display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:13px;font-weight:800;color:#000;}
+.hdr-uname{font-size:12px;font-weight:600;color:var(--txt2);}
+
+/* HAMBURGER */
+.hdr-ham{display:none;flex-direction:column;justify-content:center;gap:5px;background:none;border:none;padding:6px;border-radius:var(--r);margin-left:6px;}
+.hdr-ham span{display:block;width:20px;height:2px;background:var(--txt2);border-radius:2px;transition:all .3s;}
+.admin-login-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:1px solid var(--bd);background:var(--s2);color:var(--txt2);font-family:var(--fd);font-size:12px;font-weight:700;letter-spacing:.5px;transition:all .2s;cursor:pointer;white-space:nowrap;}
+.admin-login-btn:hover{border-color:var(--acc3);color:var(--acc3);}
+.admin-login-btn.on{border-color:var(--acc3);background:rgba(255,184,0,.1);color:var(--acc3);}
+.hdr-ham.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.hdr-ham.open span:nth-child(2){opacity:0;}
+.hdr-ham.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+
+/* MOBILE DRAWER */
+.mob-drawer{display:none;position:fixed;inset:0;z-index:200;}
+.mob-drawer.open{display:block;}
+.mob-overlay{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);}
+.mob-menu{position:absolute;top:0;left:0;bottom:0;width:250px;background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:10px 8px;gap:2px;overflow-y:auto;animation:sil .25s ease;}
+@keyframes sil{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+.mob-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:var(--r);border:none;background:transparent;color:var(--txt2);font-family:var(--fd);font-size:17px;font-weight:700;letter-spacing:.3px;transition:all .2s;text-align:left;width:100%;}
+.mob-item:hover{background:var(--s2);color:var(--txt);}
+.mob-item.on{background:var(--s3);color:var(--acc);}
+.mob-item svg{width:17px;height:17px;flex-shrink:0;}
+.mob-div{height:1px;background:var(--bd);margin:5px 8px;}
+
+/* BODY */
+.app-body{flex:1;display:flex;overflow:hidden;}
+
+/* ══════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════ */
+.sidebar{
+  width:var(--sw);flex-shrink:0;
+  background:var(--s1);border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.sb-search{padding:10px;border-bottom:1px solid var(--bd);}
+.sb-search input{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:8px 12px;color:var(--txt);font-size:13px;outline:none;transition:border-color .2s;}
+.sb-search input:focus{border-color:var(--acc);}
+.sb-search input::placeholder{color:var(--txt3);}
+.sb-cats{display:flex;gap:4px;padding:8px 10px;overflow-x:auto;border-bottom:1px solid var(--bd);}
+.sb-cats::-webkit-scrollbar{height:0;}
+.cat-pill{flex-shrink:0;padding:4px 9px;border-radius:20px;border:1px solid var(--bd);background:transparent;color:var(--txt3);font-family:var(--fd);font-size:11px;font-weight:600;transition:all .2s;white-space:nowrap;}
+.cat-pill:hover{border-color:var(--bd2);color:var(--txt2);}
+.cat-pill.on{background:var(--acc);border-color:var(--acc);color:#000;}
+.sb-info{padding:5px 12px;font-size:11px;color:var(--txt3);border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;}
+.sb-sort{background:none;border:1px solid var(--bd);border-radius:5px;color:var(--txt3);font-size:10px;padding:2px 6px;transition:all .2s;}
+.sb-sort:hover{color:var(--txt2);border-color:var(--bd2);}
+.ch-list{flex:1;overflow-y:auto;position:relative;padding:0 6px;}
+.ch-item{display:flex;align-items:center;gap:8px;padding:8px 8px;border-radius:var(--r);cursor:pointer;transition:background .15s;border:1px solid transparent;margin-bottom:2px;}
+.ch-item:hover{background:var(--s2);}
+.ch-item.on{background:rgba(0,212,255,.07);border-color:rgba(0,212,255,.25);}
+.ch-logo{width:38px;height:38px;border-radius:var(--r);flex-shrink:0;background:var(--s3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;}
+.ch-logo img{width:100%;height:100%;object-fit:contain;}
+.ch-meta{flex:1;min-width:0;}
+.ch-name{font-size:12px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ch-grp{font-size:10px;color:var(--txt3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ch-fav{background:none;border:none;color:var(--txt3);font-size:14px;padding:2px 4px;border-radius:4px;transition:all .15s;flex-shrink:0;opacity:0;}
+.ch-item:hover .ch-fav{opacity:1;}
+.ch-fav.on{opacity:1;color:var(--acc3);}
+.ch-dot{width:6px;height:6px;border-radius:50%;background:var(--acc4);flex-shrink:0;animation:bl 1.5s ease-in-out infinite;}
+.vsp{width:1px;pointer-events:none;}
+.sb-load{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--txt3);}
+.spin{width:30px;height:30px;border:2px solid var(--bd);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ══════════════════════════════════════════
+   MAIN PANEL
+══════════════════════════════════════════ */
+.main-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.sub-page{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.sub-page.on{display:flex;}
+
+/* ══════════════════════════════════════════
+   PLAYER PAGE
+══════════════════════════════════════════ */
+.player-wrap{flex:1;position:relative;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:0;}
+#mainVid{width:100%;height:100%;object-fit:contain;background:#000;}
+.p-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--txt3);pointer-events:none;}
+.p-empty-icon{font-size:54px;opacity:.2;}
+.p-empty h2{font-family:var(--fd);font-size:24px;letter-spacing:2px;opacity:.35;}
+.p-empty p{font-size:12px;opacity:.4;text-align:center;}
+.p-buf{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);pointer-events:none;}
+.p-buf.on{display:flex;}
+.buf-ring{width:52px;height:52px;border:3px solid rgba(0,212,255,.15);border-top-color:var(--acc);border-radius:50%;animation:sp .65s linear infinite;}
+
+/* OVERLAY */
+.p-ov{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;opacity:0;transition:opacity .25s;pointer-events:none;}
+.player-wrap:hover .p-ov,.p-ov.vis{opacity:1;pointer-events:all;}
+.p-ov-top{background:linear-gradient(to bottom,rgba(0,0,0,.8),transparent);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.p-ov-info{display:flex;align-items:center;gap:8px;}
+.p-live-badge{background:var(--acc2);color:#fff;font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:1.5px;padding:2px 8px;border-radius:4px;box-shadow:0 0 10px var(--glowr);animation:lbp 1.5s ease-in-out infinite;}
+@keyframes lbp{0%,100%{box-shadow:0 0 10px var(--glowr)}50%{box-shadow:0 0 22px rgba(255,62,62,.7)}}
+.p-ch-title{font-family:var(--fd);font-size:20px;font-weight:700;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px;}
+.p-top-btns{display:flex;gap:5px;}
+.pcb{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);color:#fff;padding:6px;display:flex;align-items:center;transition:all .15s;}
+.pcb:hover{background:rgba(255,255,255,.15);}
+.pcb svg{width:15px;height:15px;}
+.p-ov-bot{background:linear-gradient(to top,rgba(0,0,0,.85),transparent);padding:12px 16px;}
+.p-prog{height:3px;background:rgba(255,255,255,.15);border-radius:2px;margin-bottom:12px;overflow:hidden;}
+.p-prog-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc3));animation:pgp 2s linear infinite;background-size:200% 100%;}
+@keyframes pgp{to{background-position:-200% 0}}
+.p-ctrls{display:flex;align-items:center;gap:8px;}
+.p-play-btn{background:rgba(0,212,255,.2);border:1px solid var(--acc);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;color:var(--acc);transition:all .2s;flex-shrink:0;}
+.p-play-btn:hover{background:var(--acc);color:#000;box-shadow:0 0 18px var(--glow);}
+.p-play-btn svg{width:17px;height:17px;}
+.vol-wrap{display:flex;align-items:center;gap:6px;}
+.vol-wrap button{background:none;border:none;padding:3px;cursor:pointer;}
+.vol-wrap svg{width:14px;height:14px;color:rgba(255,255,255,.6);}
+.vol-slider{-webkit-appearance:none;width:72px;height:3px;border-radius:2px;background:rgba(255,255,255,.25);cursor:pointer;}
+.vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--acc);}
+.p-time{font-family:var(--fd);font-size:14px;color:rgba(255,255,255,.6);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.p-spc{flex:1;}
+.p-qual-wrap{position:relative;}
+.p-qual-btn{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);color:rgba(255,255,255,.8);font-family:var(--fd);font-size:12px;font-weight:600;padding:5px 9px;display:flex;align-items:center;gap:4px;transition:all .2s;}
+.p-qual-btn:hover{background:rgba(255,255,255,.1);}
+.p-qual-btn svg{width:12px;height:12px;}
+.p-qual-drop{position:absolute;bottom:calc(100% + 8px);right:0;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:5px;min-width:110px;display:none;flex-direction:column;gap:1px;box-shadow:0 8px 28px rgba(0,0,0,.6);}
+.p-qual-wrap:hover .p-qual-drop{display:flex;}
+.p-qual-item{padding:7px 10px;border-radius:var(--r);border:none;background:transparent;color:var(--txt2);font-size:13px;text-align:left;transition:all .15s;}
+.p-qual-item:hover{background:var(--s3);color:var(--txt);}
+.p-qual-item.on{color:var(--acc);}
+
+/* EPG BAR */
+.epg-bar{background:var(--s2);border-top:1px solid var(--bd);padding:6px 12px;display:flex;gap:8px;align-items:center;flex-shrink:0;overflow-x:auto;}
+.epg-bar::-webkit-scrollbar{height:0;}
+.epg-lbl{font-family:var(--fd);font-size:12px;font-weight:700;color:var(--acc);white-space:nowrap;flex-shrink:0;}
+.epg-slot{display:flex;align-items:center;gap:7px;flex-shrink:0;background:var(--s3);border:1px solid var(--bd);border-radius:var(--r);padding:5px 10px;}
+.epg-slot.live{border-color:rgba(0,212,255,.3);background:rgba(0,212,255,.07);}
+.epg-time{font-size:10px;color:var(--txt3);font-variant-numeric:tabular-nums;}
+.epg-name{font-size:12px;font-weight:500;color:var(--txt2);}
+.epg-slot.live .epg-name{color:var(--acc);}
+.epg-pb{width:50px;height:3px;background:var(--bd);border-radius:2px;overflow:hidden;}
+.epg-pb-fill{height:100%;background:var(--acc);border-radius:2px;}
+
+/* ADMIN URL BAR */
+.admin-bar{background:var(--s1);border-top:1px solid var(--bd);padding:9px 14px;display:flex;gap:8px;align-items:center;flex-shrink:0;display:none;}
+.admin-bar input{flex:1;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:8px 12px;color:var(--txt);font-size:13px;outline:none;transition:border-color .2s;}
+.admin-bar input:focus{border-color:var(--acc);}
+.admin-bar input::placeholder{color:var(--txt3);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:var(--r);border:none;font-family:var(--fd);font-size:14px;font-weight:700;letter-spacing:.3px;transition:all .2s;white-space:nowrap;}
+.btn svg{width:13px;height:13px;}
+.btn-acc{background:linear-gradient(135deg,var(--acc),#0066ff);color:#000;box-shadow:0 0 14px var(--glow);}
+.btn-acc:hover{transform:translateY(-1px);box-shadow:0 0 24px var(--glow);}
+.btn-g{background:transparent;color:var(--txt2);border:1px solid var(--bd);}
+.btn-g:hover{color:var(--txt);border-color:var(--bd2);}
+.btn-red{background:linear-gradient(135deg,var(--acc2),#aa0000);color:#fff;box-shadow:0 0 12px var(--glowr);}
+
+/* ══════════════════════════════════════════
+   MOVIE PAGE
+══════════════════════════════════════════ */
+.movie-bar{background:var(--s1);border-bottom:1px solid var(--bd);padding:9px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.movie-bar-title{font-family:var(--fd);font-size:17px;font-weight:700;color:var(--acc);letter-spacing:.5px;flex-shrink:0;}
+.movie-wrap{flex:1;position:relative;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:0;}
+#movieVid{width:100%;height:100%;object-fit:contain;background:#000;}
+.movie-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--txt3);pointer-events:none;}
+.movie-empty-icon{font-size:54px;opacity:.2;}
+.movie-empty h2{font-family:var(--fd);font-size:24px;letter-spacing:2px;opacity:.35;}
+.movie-empty p{font-size:12px;opacity:.4;text-align:center;max-width:260px;line-height:1.6;}
+.movie-empty-btns{pointer-events:all;display:flex;gap:8px;margin-top:4px;}
+.movie-buf{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);pointer-events:none;}
+.movie-buf.on{display:flex;}
+/* Movie overlay */
+.movie-ov{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;opacity:0;transition:opacity .25s;pointer-events:none;}
+.movie-wrap:hover .movie-ov,.movie-ov.vis{opacity:1;pointer-events:all;}
+.movie-ov-inner{background:linear-gradient(to top,rgba(0,0,0,.9),transparent);padding:12px 18px 14px;}
+.movie-title{font-family:var(--fd);font-size:17px;font-weight:700;color:#fff;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.movie-seek{position:relative;height:5px;background:rgba(255,255,255,.18);border-radius:3px;margin-bottom:12px;cursor:pointer;}
+.movie-seek-buf{position:absolute;left:0;top:0;height:100%;background:rgba(255,255,255,.2);border-radius:3px;pointer-events:none;}
+.movie-seek-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc3));border-radius:3px;pointer-events:none;}
+.movie-seek-thumb{position:absolute;top:50%;width:13px;height:13px;background:var(--acc);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 7px var(--glow);pointer-events:none;opacity:0;transition:opacity .2s;}
+.movie-seek:hover .movie-seek-thumb{opacity:1;}
+.movie-ctrls{display:flex;align-items:center;gap:8px;}
+.movie-play-btn{background:rgba(0,212,255,.2);border:1px solid var(--acc);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;color:var(--acc);transition:all .2s;flex-shrink:0;}
+.movie-play-btn:hover{background:var(--acc);color:#000;}
+.movie-play-btn svg{width:17px;height:17px;}
+.movie-time{font-family:var(--fd);font-size:14px;color:rgba(255,255,255,.65);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.movie-speed{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);color:rgba(255,255,255,.8);font-family:var(--fd);font-size:12px;font-weight:600;padding:5px 7px;outline:none;}
+.movie-speed option{background:var(--s2);}
+.movie-lib{background:var(--s1);border-top:1px solid var(--bd);flex-shrink:0;max-height:130px;overflow-y:auto;padding:6px 10px;display:none;}
+.movie-lib-title{font-family:var(--fd);font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;display:flex;justify-content:space-between;}
+.movie-lib-title button{background:none;border:none;color:var(--txt3);font-size:11px;cursor:pointer;}
+.movie-lib-title button:hover{color:var(--acc2);}
+.movie-lib-grid{display:flex;gap:6px;flex-wrap:wrap;}
+.movie-lib-item{display:flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:5px 9px;cursor:pointer;transition:all .2s;max-width:240px;}
+.movie-lib-item:hover{background:var(--s3);border-color:var(--acc);}
+.movie-lib-item.on{border-color:var(--acc);background:rgba(0,212,255,.07);}
+.movie-lib-name{font-size:11px;font-weight:500;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+.movie-lib-ext{font-size:10px;color:var(--txt3);}
+.movie-lib-rm{background:none;border:none;color:var(--txt3);font-size:11px;cursor:pointer;padding:1px 3px;border-radius:3px;transition:all .15s;}
+.movie-lib-rm:hover{color:var(--acc2);}
+
+/* ══════════════════════════════════════════
+   OTHER PAGES
+══════════════════════════════════════════ */
+.page-wrap{flex:1;overflow-y:auto;padding:18px;}
+.page-title{font-family:var(--fd);font-size:26px;font-weight:800;letter-spacing:2px;margin-bottom:16px;}
+.page-title span{color:var(--acc);}
+
+/* FAVS */
+.favs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+.fav-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:14px;cursor:pointer;transition:all .25s;position:relative;}
+.fav-card:hover{border-color:var(--bd2);transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.4);}
+.fav-logo{width:48px;height:48px;border-radius:var(--r);background:var(--s2);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;margin-bottom:8px;}
+.fav-logo img{width:100%;height:100%;object-fit:contain;}
+.fav-name{font-size:13px;font-weight:600;color:var(--txt);margin-bottom:2px;}
+.fav-grp{font-size:11px;color:var(--txt3);}
+.fav-rm{position:absolute;top:8px;right:8px;background:rgba(255,62,62,.1);border:1px solid rgba(255,62,62,.2);border-radius:5px;color:var(--acc2);font-size:11px;padding:3px 6px;opacity:0;transition:all .2s;}
+.fav-card:hover .fav-rm{opacity:1;}
+.fav-rm:hover{background:rgba(255,62,62,.3);}
+.favs-empty{text-align:center;color:var(--txt3);padding:50px 0;}
+.favs-empty .fi{font-size:44px;opacity:.2;margin-bottom:10px;}
+
+/* ADMIN */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:18px;}
+.stat-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:16px;position:relative;overflow:hidden;}
+.stat-val{font-family:var(--fd);font-size:32px;font-weight:800;color:var(--acc);}
+.stat-val.red{color:var(--acc2);}
+.stat-val.gold{color:var(--acc3);}
+.stat-val.green{color:var(--acc4);}
+.stat-lbl{font-size:11px;color:var(--txt3);margin-top:2px;}
+.stat-ico{font-size:26px;position:absolute;top:12px;right:12px;opacity:.25;}
+.sec-title{font-family:var(--fd);font-size:16px;font-weight:700;letter-spacing:.8px;color:var(--txt2);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:6px;}
+.sec-title::before{content:'';width:3px;height:18px;background:var(--acc);border-radius:2px;flex-shrink:0;}
+.admin-add-form{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:16px;margin-bottom:18px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ch-table{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);overflow:hidden;}
+.ch-table-head{display:grid;grid-template-columns:36px 1fr 1fr 70px 60px;padding:8px 12px;background:var(--s2);font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);border-bottom:1px solid var(--bd);}
+.ch-table-row{display:grid;grid-template-columns:36px 1fr 1fr 70px 60px;padding:9px 12px;border-bottom:1px solid var(--bd);align-items:center;transition:background .15s;font-size:12px;}
+.ch-table-row:last-child{border-bottom:none;}
+.ch-table-row:hover{background:var(--s2);}
+.ch-tnum{color:var(--txt3);font-variant-numeric:tabular-nums;}
+.ch-tname{color:var(--txt);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px;}
+.ch-turl{color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px;}
+.ch-tgrp{background:var(--s3);border:1px solid var(--bd);border-radius:20px;padding:2px 8px;font-size:10px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ch-tdel{background:rgba(255,62,62,.1);border:1px solid rgba(255,62,62,.2);border-radius:5px;color:var(--acc2);font-size:11px;padding:3px 8px;transition:all .2s;justify-self:start;}
+.ch-tdel:hover{background:rgba(255,62,62,.3);}
+
+/* ABOUT */
+.about-hero{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:32px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden;}
+.about-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(0,212,255,.07),transparent);}
+.about-hero-logo{width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,var(--acc),#0055cc);display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 0 36px var(--glow);margin:0 auto 14px;position:relative;}
+.about-hero h1{font-family:var(--fd);font-size:36px;font-weight:800;letter-spacing:3px;position:relative;background:linear-gradient(135deg,#fff,var(--acc),var(--acc3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.about-hero p{color:var(--txt2);font-size:14px;max-width:460px;margin:8px auto 0;line-height:1.7;position:relative;}
+.about-ver{display:inline-block;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);border-radius:20px;padding:3px 12px;font-family:var(--fd);font-size:12px;color:var(--acc);letter-spacing:1px;margin-top:10px;position:relative;}
+.about-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px;}
+.about-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:16px;}
+.about-card-icon{font-size:26px;margin-bottom:8px;}
+.about-card h3{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--acc);letter-spacing:.3px;margin-bottom:6px;}
+.about-card p{font-size:12px;color:var(--txt2);line-height:1.65;}
+.kb-table{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);overflow:hidden;}
+.kb-row{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--bd);font-size:12px;}
+.kb-row:last-child{border-bottom:none;}
+.kb-row:hover{background:var(--s2);}
+.kb-key{background:var(--s3);border:1px solid var(--bd);border-radius:5px;padding:2px 9px;font-family:var(--fd);font-size:12px;font-weight:700;color:var(--acc);}
+.kb-desc{color:var(--txt2);}
+/* ── GELİŞTİRİCİ KARTI ── */
+.dev-card{
+  background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);
+  padding:20px;margin-bottom:16px;
+  display:flex;align-items:flex-start;gap:18px;
+  position:relative;overflow:hidden;flex-wrap:wrap;
+}
+.dev-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 80% at 0% 50%,rgba(0,212,255,.06),transparent);
+  pointer-events:none;
+}
+.dev-avatar{
+  width:70px;height:70px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--acc),var(--acc3));
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;
+  box-shadow:0 0 30px var(--glow);
+  animation:ap 2.5s ease-in-out infinite;
+  position:relative;z-index:1;
+}
+.dev-info{flex:1;position:relative;z-index:1;}
+.dev-name{
+  font-family:var(--fd);font-size:22px;font-weight:800;
+  letter-spacing:1.5px;
+  background:linear-gradient(135deg,#fff,var(--acc));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:4px;
+}
+.dev-title{font-size:13px;color:var(--acc3);font-weight:600;letter-spacing:.5px;margin-bottom:8px;}
+.dev-desc{font-size:13px;color:var(--txt2);line-height:1.7;}
+.dev-links{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.dev-link{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:20px;
+  border:1px solid var(--bd);background:var(--s2);
+  color:var(--txt2);font-size:13px;font-weight:500;
+  text-decoration:none;transition:all .2s;cursor:pointer;
+}
+.dev-link:hover{border-color:var(--acc);color:var(--acc);background:rgba(0,212,255,.07);}
+.dev-link svg{width:15px;height:15px;flex-shrink:0;}
+.dev-badge{
+  position:absolute;top:16px;right:16px;
+  background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.3);
+  border-radius:20px;padding:4px 12px;
+  font-family:var(--fd);font-size:12px;font-weight:700;
+  color:var(--acc3);letter-spacing:1px;
+}
+.tech-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:16px;}
+.tech-item{
+  background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);
+  padding:10px 12px;display:flex;align-items:center;gap:8px;
+  font-size:12px;font-weight:500;color:var(--txt2);transition:all .2s;
+}
+.tech-item:hover{border-color:var(--acc);color:var(--txt);}
+.tech-icon{font-size:18px;}
+/* ── SON İZLENENLER ── */
+.recent-bar{background:var(--s2);border-bottom:1px solid var(--bd);padding:6px 12px;display:flex;align-items:center;gap:8px;overflow-x:auto;flex-shrink:0;}
+.recent-bar::-webkit-scrollbar{height:0;}
+.recent-lbl{font-family:var(--fd);font-size:12px;font-weight:700;color:var(--acc3);white-space:nowrap;flex-shrink:0;}
+.recent-chip{display:flex;align-items:center;gap:6px;background:var(--s3);border:1px solid var(--bd);border-radius:20px;padding:4px 10px;cursor:pointer;transition:all .2s;flex-shrink:0;}
+.recent-chip:hover{border-color:var(--acc);background:rgba(0,212,255,.07);}
+.recent-chip-name{font-size:12px;color:var(--txt2);white-space:nowrap;}
+
+/* ── ARAMA GEÇMİŞİ ── */
+.search-hist{position:absolute;top:100%;left:0;right:0;background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:6px;z-index:50;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5);}
+.search-hist.on{display:block;}
+.sh-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);cursor:pointer;transition:background .15s;font-size:13px;color:var(--txt2);}
+.sh-item:hover{background:var(--s2);color:var(--txt);}
+.sh-clear{width:100%;padding:6px;border:none;background:transparent;color:var(--txt3);font-size:11px;cursor:pointer;transition:color .15s;text-align:center;}
+.sh-clear:hover{color:var(--acc2);}
+.sb-search-wrap{position:relative;}
+
+/* ── KANAL DURUM ROZETI ── */
+.ch-offline .ch-dot{background:var(--txt3);animation:none;}
+.ch-offline .ch-name{opacity:.5;}
+
+/* ── SES HAFIZASİ göstergesi ── */
+.vol-pct{font-size:10px;color:rgba(255,255,255,.5);font-variant-numeric:tabular-nums;min-width:28px;text-align:center;}
+
+/* ── AUTO NEXT göstergesi ── */
+.auto-next-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--acc3);transform:scaleX(0);transform-origin:left;transition:none;z-index:25;}
+
+/* ── SWIPE overlay ── */
+.swipe-hint{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,212,255,.15);border:1px solid var(--acc);border-radius:50px;padding:8px 18px;font-family:var(--fd);font-size:16px;font-weight:700;color:var(--acc);pointer-events:none;opacity:0;transition:opacity .2s;z-index:30;}
+.swipe-hint.left{left:12px;}
+.swipe-hint.right{right:12px;}
+.swipe-hint.vis{opacity:1;}
+
+/* ── SCREENSHOT flash ── */
+.screenshot-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:40;transition:opacity .1s;}
+
+/* ── ADMIN KULLANICI YÖNETİMİ ── */
+.user-table{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);overflow:hidden;margin-bottom:12px;}
+.user-row{display:grid;grid-template-columns:1fr 80px 70px 60px;padding:9px 14px;border-bottom:1px solid var(--bd);align-items:center;font-size:13px;}
+.user-row:last-child{border-bottom:none;}
+.user-row:hover{background:var(--s2);}
+.user-head{background:var(--s2);font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);}
+.user-role{font-size:11px;padding:2px 8px;border-radius:20px;text-align:center;}
+.user-role.admin{background:rgba(255,184,0,.15);color:var(--acc3);border:1px solid rgba(255,184,0,.3);}
+.user-role.user{background:rgba(0,212,255,.1);color:var(--acc);border:1px solid rgba(0,212,255,.2);}
+.user-role.guest{background:var(--s3);color:var(--txt3);border:1px solid var(--bd);}
+.user-del{background:rgba(255,62,62,.1);border:1px solid rgba(255,62,62,.2);border-radius:5px;color:var(--acc2);font-size:11px;padding:3px 8px;transition:all .2s;}
+.user-del:hover{background:rgba(255,62,62,.3);}
+
+/* ── CACHE/PLAYLIST YÖNETİMİ ── */
+.cache-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.cache-info h4{font-size:14px;font-weight:600;color:var(--txt);margin-bottom:3px;}
+.cache-info p{font-size:12px;color:var(--txt3);}
+.cache-actions{display:flex;gap:8px;flex-shrink:0;}
+
+/* ── GRUP DÜZENLEME ── */
+.grp-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--bd);}
+.grp-item:last-child{border-bottom:none;}
+.grp-name{flex:1;font-size:13px;color:var(--txt);}
+.grp-count{font-size:11px;color:var(--txt3);}
+.grp-rename-input{background:var(--s2);border:1px solid var(--acc);border-radius:var(--r);padding:4px 8px;color:var(--txt);font-size:13px;outline:none;width:140px;}
+
+
+/* ── LEADERBOARD AD ── */
+.ad-leader{
+  flex-shrink:0; background:var(--s1); border-top:1px solid var(--bd);
+  display:none; align-items:center; justify-content:center;
+  min-height:64px; position:relative; overflow:hidden; cursor:pointer;
+}
+.ad-leader.on{display:flex;}
+.ad-leader-inner{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:4px 12px;}
+.ad-leader-inner img{max-height:60px;max-width:100%;object-fit:contain;border-radius:6px;}
+.ad-leader-placeholder{display:flex;align-items:center;gap:10px;color:var(--txt3);font-size:13px;}
+.ad-tag{position:absolute;top:4px;right:8px;background:rgba(255,184,0,.15);border:1px solid rgba(255,184,0,.25);border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--acc3);padding:1px 5px;pointer-events:none;}
+
+/* ── REKLAM SEKMESİ ── */
+.ad-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--bd);padding-bottom:12px;}
+.ad-tab-btn{padding:7px 16px;border-radius:var(--r);border:1px solid var(--bd);background:transparent;color:var(--txt2);font-family:var(--fd);font-size:14px;font-weight:700;letter-spacing:.3px;cursor:pointer;transition:all .2s;}
+.ad-tab-btn:hover{color:var(--txt);border-color:var(--bd2);}
+.ad-tab-btn.on{background:var(--s3);color:var(--acc3);border-color:var(--acc3);}
+.ad-tab-content{display:none;}
+.ad-tab-content.on{display:block;}
+.ad-zone-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:18px;margin-bottom:14px;}
+.ad-zone-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.ad-zone-title{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--acc3);letter-spacing:.5px;}
+.ad-toggle-wrap{display:flex;align-items:center;gap:8px;}
+.ad-status-dot{width:8px;height:8px;border-radius:50%;background:var(--txt3);}
+.ad-status-dot.on{background:var(--acc4);box-shadow:0 0 6px var(--acc4);}
+.ad-status-lbl{font-size:12px;color:var(--txt3);}
+.ad-status-dot.on+.ad-status-lbl{color:var(--acc4);}
+.ad-toggle-btn{padding:4px 12px;border-radius:20px;border:1px solid var(--bd);background:transparent;color:var(--txt2);font-family:var(--fd);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.ad-toggle-btn:hover{border-color:var(--acc3);color:var(--acc3);}
+.ad-toggle-btn.on{background:rgba(255,184,0,.12);border-color:var(--acc3);color:var(--acc3);}
+.ad-preview-box{background:var(--s2);border:1px dashed var(--bd);border-radius:var(--r);padding:10px;margin-top:10px;min-height:48px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;color:var(--txt3);}
+.ad-preview-box img{max-height:48px;max-width:100%;object-fit:contain;border-radius:4px;}
+.ad-summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+.ad-sum-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);padding:14px;display:flex;align-items:center;gap:10px;}
+.ad-sum-icon{font-size:22px;}
+.ad-sum-name{font-size:13px;font-weight:600;color:var(--txt);}
+.ad-sum-status{font-size:11px;color:var(--txt3);margin-top:2px;}
+.ad-sum-status.on{color:var(--acc4);}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(10px);}
+.modal-bg.on{opacity:1;pointer-events:all;}
+.modal{background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:26px;width:460px;max-width:94vw;max-height:90vh;overflow-y:auto;transform:translateY(16px) scale(.98);transition:transform .22s;box-shadow:0 40px 80px rgba(0,0,0,.8);}
+.modal-bg.on .modal{transform:translateY(0) scale(1);}
+.modal h3{font-family:var(--fd);font-size:20px;font-weight:800;letter-spacing:1px;margin-bottom:16px;color:var(--acc);}
+.modal-acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;z-index:400;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r2);padding:10px 16px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;box-shadow:0 8px 28px rgba(0,0,0,.6);transform:translateY(60px);opacity:0;transition:all .3s;pointer-events:none;max-width:320px;}
+.toast.on{transform:translateY(0);opacity:1;}
+.toast-ico{font-size:15px;flex-shrink:0;}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════ */
+@media(max-width:900px){
+  :root{--sw:240px;}
+  .hdr-clock{display:none;}
+}
+@media(max-width:700px){
+  :root{--hw:52px;}
+  .hdr-nav{display:none;}
+  .hdr-live{display:none;}
+  .hdr-clock{display:none;}
+  .hdr-ham{display:flex;}
+  .hdr-uname{display:none;}
+  .app-body{flex-direction:column;}
+  .sidebar{width:100%;height:auto;max-height:0;overflow:hidden;border-right:none;border-bottom:1px solid var(--bd);transition:max-height .3s ease;}
+  .sidebar.open{max-height:320px;}
+  .ch-list{max-height:180px;}
+  .p-ch-title{font-size:15px;max-width:220px;}
+  .admin-add-form .form-row{grid-template-columns:1fr;}
+  .ch-table-head,.ch-table-row{grid-template-columns:30px 1fr 60px 50px;}
+  .ch-turl{display:none;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .favs-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:480px){
+  .hdr-user{display:none;}
+  .favs-grid{grid-template-columns:1fr;}
+  .about-cards{grid-template-columns:1fr;}
+  .vol-slider{width:50px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ AUTH ══ -->
+<div id="sAuth" class="screen on">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">📺</div>
+      <span class="auth-logo-txt">VİZİON BOX</span>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab on" onclick="authTab('login')">GİRİŞ YAP</button>
+      <button class="auth-tab" onclick="authTab('register')">KAYIT OL</button>
+    </div>
+    <div id="fLogin" class="auth-form on">
+      <div class="fg"><label>Kullanıcı Adı</label><input type="text" id="lgUser" placeholder="kullanici_adi" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="fg"><label>Şifre</label><input type="password" id="lgPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <p class="auth-err" id="lgErr">❌ Hatalı kullanıcı adı veya şifre!</p>
+      <button class="auth-btn" onclick="doLogin()">GİRİŞ YAP</button>
+      <div class="auth-guest">Hesabın yok mu? <a onclick="authTab('register')">Kayıt ol</a> &nbsp;|&nbsp; <a onclick="guestLogin()">Misafir gir</a></div>
+    </div>
+    <div id="fReg" class="auth-form">
+      <div class="fg"><label>Ad Soyad</label><input type="text" id="rgName" placeholder="Ad Soyad"></div>
+      <div class="fg"><label>Kullanıcı Adı</label><input type="text" id="rgUser" placeholder="kullanici_adi"></div>
+      <div class="fg"><label>Şifre</label><input type="password" id="rgPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()"></div>
+      <p class="auth-err" id="rgErr"></p>
+      <button class="auth-btn" onclick="doRegister()">HESAP OLUŞTUR</button>
+      <div class="auth-guest">Hesabın var mı? <a onclick="authTab('login')">Giriş yap</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="sApp" class="screen">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="hdr-logo">
+      <div class="hdr-logo-mark">📺</div>
+      <span class="hdr-logo-txt">VİZİON BOX</span>
+    </div>
+    <nav class="hdr-nav">
+      <button class="nav-tab on" onclick="goPage('tv')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM10 8l6 4-6 4V8z"/></svg>
+        CANLI TV
+      </button>
+      <button class="nav-tab" onclick="goPage('movies')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>
+        FİLMLER
+      </button>
+      <button class="nav-tab" onclick="goPage('favs')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        FAVORİLER
+      </button>
+      <button class="nav-tab" id="adminNavBtn" style="display:none" onclick="goPage('admin')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.3L12 17l-6.2 4.2 2.4-7.3L2 9.4h7.6z"/></svg>
+        ADMİN
+      </button>
+      <button class="nav-tab" onclick="goPage('about')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        HAKKINDA
+      </button>
+    </nav>
+    <div class="hdr-right">
+      <div class="hdr-live"><div class="dot"></div>CANLI</div>
+      <span class="hdr-clock" id="hdrClock">--:--:--</span>
+      <button class="admin-login-btn" id="adminLoginBtn" onclick="openAdminLogin()" title="Admin Girişi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M16 11l1.5 1.5L20 10"/></svg>
+        <span id="adminLoginTxt">ADMİN GİRİŞ</span>
+      </button>
+      <div class="hdr-user" onclick="doLogout()">
+        <div class="hdr-av" id="hdrAv">?</div>
+        <span class="hdr-uname" id="hdrName">Misafir</span>
+      </div>
+      <button class="hdr-ham" id="hamBtn" onclick="toggleDrawer()">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MOBILE DRAWER -->
+  <div class="mob-drawer" id="mobDrawer">
+    <div class="mob-overlay" onclick="closeDrawer()"></div>
+    <div class="mob-menu">
+      <button class="mob-item on" onclick="mobGo('tv')"><svg viewBox="0 0 24 24" fill="currentColor" style="width:17px;height:17px"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM10 8l6 4-6 4V8z"/></svg>CANLI TV</button>
+      <button class="mob-item" onclick="mobGo('movies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20"/></svg>FİLMLER</button>
+      <button class="mob-item" onclick="mobGo('favs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>FAVORİLER</button>
+      <button class="mob-item" id="mobAdminBtn" style="display:none" onclick="mobGo('admin')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>ADMİN PANELİ</button>
+      <button class="mob-item" onclick="mobGo('about')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>HAKKINDA</button>
+      <div class="mob-div"></div>
+      <button class="mob-item" onclick="openAdminLogin();closeDrawer()" style="color:var(--acc3)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        ADMİN GİRİŞ
+      </button>
+      <button class="mob-item" onclick="doLogout();closeDrawer()" style="color:var(--acc2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>ÇIKIŞ YAP</button>
+      <div style="padding:8px 12px;font-size:11px;color:var(--txt3);margin-top:auto" id="mobUserInfo"></div>
+    </div>
+  </div>
+
+  <div class="app-body">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sb-search">
+        <div class="sb-search-wrap">
+          <input type="text" id="sbSearch" placeholder="🔍 Kanal ara…" oninput="debRender();showSearchHist()" onfocus="showSearchHist()" onblur="setTimeout(hideSearchHist,200)">
+          <div class="search-hist" id="searchHist"></div>
+        </div>
+      </div>
+      <div class="sb-cats" id="sbCats"></div>
+      <div class="sb-info">
+        <span id="sbCount">Yükleniyor…</span>
+        <button class="sb-sort" onclick="toggleSort()">⇅ Sırala</button>
+      </div>
+      <div class="ch-list" id="chList">
+        <div class="sb-load" id="sbLoad">
+          <div class="spin"></div>
+          <p style="font-size:13px">Playlist yükleniyor…</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main-panel">
+
+      <!-- TV PAGE -->
+      <div id="pageTv" class="sub-page on">
+        <div class="player-wrap" id="playerWrap">
+          <video id="mainVid" playsinline></video>
+          <div class="p-empty" id="pEmpty">
+            <div class="p-empty-icon">📡</div>
+            <h2>KANAL SEÇİN</h2>
+            <p>Sol listeden kanal seçerek izlemeye başlayın</p>
+          </div>
+          <div class="p-buf" id="pBuf"><div class="buf-ring"></div></div>
+          <div class="swipe-hint left" id="swipeLeft">⬅ Önceki</div>
+          <div class="swipe-hint right" id="swipeRight">Sonraki ➡</div>
+          <div class="screenshot-flash" id="screenshotFlash"></div>
+          <div class="auto-next-bar" id="autoNextBar"></div>
+          <div class="p-ov" id="pOv">
+            <div class="p-ov-top">
+              <div class="p-ov-info">
+                <span class="p-live-badge">● CANLI</span>
+                <div>
+                  <div class="p-ch-title" id="pTitle">—</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.45)" id="pGrp"></div>
+                </div>
+              </div>
+              <div class="p-top-btns">
+                <button class="pcb" onclick="takeScreenshot()" title="Ekran Görüntüsü"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+                <button class="pcb" onclick="restartStream()" title="Yenile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.06"/></svg></button>
+                <button class="pcb" onclick="doPiP()" title="PiP"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="14" y="10" width="8" height="7" rx="1"/></svg></button>
+                <button class="pcb" onclick="doFS()" title="Tam Ekran"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+              </div>
+            </div>
+            <div class="p-ov-bot">
+              <div class="p-prog"><div class="p-prog-fill"></div></div>
+              <div class="p-ctrls">
+                <button class="p-play-btn" onclick="togglePlay()" id="playBtn">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+                <div class="vol-wrap">
+                  <button onclick="toggleMute()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+                  <input class="vol-slider" type="range" min="0" max="100" value="100" oninput="setVol(this.value)">
+                  <span class="vol-pct" id="volPct">100%</span>
+                </div>
+                <div class="p-qual-wrap">
+                  <button class="p-qual-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg><span id="qualLabel">OTO</span></button>
+                  <div class="p-qual-drop">
+                    <button class="p-qual-item on" onclick="setQual(-1)">Otomatik</button>
+                    <button class="p-qual-item" onclick="setQual(1080)">1080p HD</button>
+                    <button class="p-qual-item" onclick="setQual(720)">720p HD</button>
+                    <button class="p-qual-item" onclick="setQual(480)">480p</button>
+                    <button class="p-qual-item" onclick="setQual(360)">360p</button>
+                  </div>
+                </div>
+                <div class="p-spc"></div>
+                <span class="p-time" id="pTime">🔴 CANLI</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- SON İZLENENLER -->
+
+        <!-- LEADERBOARD REKLAM -->
+        <div class="ad-leader" id="adLeader" onclick="adLeaderClick()">
+          <span class="ad-tag">REKLAM</span>
+          <div class="ad-leader-inner" id="adLeaderInner">
+            <div class="ad-leader-placeholder">
+              <span>📢</span><span>728 × 60 — Leaderboard Banner (Admin panelinden yönet)</span>
+            </div>
+          </div>
+        </div>
+        <div class="admin-bar" id="adminBar">
+          <input type="text" id="adminUrl" placeholder="Admin — URL gir (m3u8, .ts, http…)" onkeydown="if(event.key==='Enter')adminPlay()">
+          <button class="btn btn-acc" onclick="adminPlay()"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>OYNAT</button>
+          <button class="btn btn-g" onclick="openModal('addChModal')">+ KANAL</button>
+          <button class="btn btn-g" onclick="openModal('m3uModal')">M3U YÜKLE</button>
+        </div>
+      </div>
+
+      <!-- MOVIES PAGE -->
+      <div id="pageMovies" class="sub-page">
+        <div class="movie-bar">
+          <span class="movie-bar-title">🎬 FİLM OYNATICI</span>
+          <div style="flex:1"></div>
+          <button class="btn btn-acc" onclick="document.getElementById('movieFile').click()" title="Dosya Aç">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </button>
+          <input type="file" id="movieFile" accept=".mkv,.mp4,.avi,.mov,.wmv,.flv,.webm,.m4v,.ts,.mpeg,.mpg,.3gp" style="display:none" onchange="movieOpenFile(event)">
+        </div>
+        <div class="movie-wrap" id="movieWrap">
+          <video id="movieVid" playsinline></video>
+          <div class="movie-empty" id="movieEmpty">
+            <div class="movie-empty-icon">🎬</div>
+            <h2>FİLM OYNAT</h2>
+            <p>MKV, MP4, AVI, MOV ve daha fazlası desteklenir. Dosya aç veya playlist'ten film kategorisine tıkla.</p>
+            <div class="movie-empty-btns">
+              <button class="btn btn-acc" onclick="document.getElementById('movieFile').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>DOSYA AÇ</button>
+            </div>
+          </div>
+          <div class="movie-buf" id="movieBuf"><div class="buf-ring"></div></div>
+          <div class="movie-ov" id="movieOv">
+            <div class="movie-ov-inner">
+              <div class="movie-title" id="movieTitle">—</div>
+              <div class="movie-seek" id="movieSeek" onmousedown="seekStart(event)" onmousemove="seekHover(event)" onmouseleave="hideTip()" >
+                <div class="movie-seek-buf" id="seekBuf"></div>
+                <div class="movie-seek-fill" id="seekFill"></div>
+                <div class="movie-seek-thumb" id="seekThumb"></div>
+                <div id="seekTip" style="position:absolute;bottom:14px;background:rgba(0,0,0,.85);color:#fff;font-size:11px;padding:2px 7px;border-radius:4px;transform:translateX(-50%);display:none;white-space:nowrap;pointer-events:none"></div>
+              </div>
+              <div class="movie-ctrls">
+                <button class="pcb" onclick="movieSkip(-10)" title="-10s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.06"/></svg></button>
+                <button class="movie-play-btn" onclick="toggleMoviePlay()" id="moviePlayBtn">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+                <button class="pcb" onclick="movieSkip(10)" title="+10s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M5 4l14 8-14 8V4z"/></svg></button>
+                <div class="vol-wrap">
+                  <button onclick="toggleMovieMute()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:rgba(255,255,255,.6)"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+                  <input class="vol-slider" type="range" min="0" max="100" value="100" oninput="setMovieVol(this.value)">
+                </div>
+                <span class="movie-time" id="movieTime">0:00 / 0:00</span>
+                <div style="flex:1"></div>
+                <select class="movie-speed" onchange="setMovieSpeed(this.value)">
+                  <option value=".5">0.5×</option><option value=".75">0.75×</option>
+                  <option value="1" selected>1×</option><option value="1.25">1.25×</option>
+                  <option value="1.5">1.5×</option><option value="2">2×</option>
+                </select>
+                <button class="pcb" onclick="doPiPMovie()" title="PiP"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="14" y="10" width="8" height="7" rx="1"/></svg></button>
+                <button class="pcb" onclick="doFSMovie()" title="Tam Ekran"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="movie-lib" id="movieLib">
+          <div class="movie-lib-title">
+            <span>📂 KÜTÜPHANEm (<span id="libCount">0</span>)</span>
+            <button onclick="clearLib()">Temizle</button>
+          </div>
+          <div class="movie-lib-grid" id="libGrid"></div>
+        </div>
+      </div>
+
+      <!-- FAVS PAGE -->
+      <div id="pageFavs" class="sub-page">
+        <div class="page-wrap">
+          <div class="page-title">⭐ FAVORİ <span>KANALLAR</span></div>
+          <div class="favs-grid" id="favsGrid"></div>
+          <div class="favs-empty" id="favsEmpty">
+            <div class="fi">⭐</div>
+            <p style="font-size:13px">Henüz favori eklemediniz.<br>Kanal listesinde ★ ikonuna tıklayın.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN PAGE -->
+      <div id="pageAdmin" class="sub-page">
+        <div class="page-wrap">
+          <div class="page-title">⚙️ ADMİN <span>PANELİ</span></div>
+          <!-- Admin Alt Sekmeleri -->
+          <div class="ad-tabs">
+            <button class="ad-tab-btn on" onclick="adminTab('channels')">📺 Kanallar</button>
+            <button class="ad-tab-btn" onclick="adminTab('ads')">📢 Reklamlar</button>
+            <button class="ad-tab-btn" onclick="adminTab('users')">👥 Kullanıcılar</button>
+            <button class="ad-tab-btn" onclick="adminTab('groups')">🗂️ Gruplar</button>
+            <button class="ad-tab-btn" onclick="adminTab('cache')">⚙️ Sistem</button>
+          </div>
+          <!-- KANALLAR SEKMESİ -->
+          <div id="adminTabChannels" class="ad-tab-content on">
+            <div class="stat-grid">
+              <div class="stat-card"><div class="stat-ico">📺</div><div class="stat-val" id="stTotal">0</div><div class="stat-lbl">Toplam Kanal</div></div>
+              <div class="stat-card"><div class="stat-ico">⭐</div><div class="stat-val gold" id="stFavs">0</div><div class="stat-lbl">Favori</div></div>
+              <div class="stat-card"><div class="stat-ico">👥</div><div class="stat-val green" id="stUsers">0</div><div class="stat-lbl">Kullanıcı</div></div>
+              <div class="stat-card"><div class="stat-ico">🎬</div><div class="stat-val red" id="stMovies">0</div><div class="stat-lbl">Film Kütüphanesi</div></div>
+            </div>
+            <div class="sec-title">Yeni Kanal Ekle</div>
+            <div class="admin-add-form">
+              <div class="form-row">
+                <div class="fg"><label>Kanal Adı</label><input type="text" id="aN" placeholder="TRT 1…"></div>
+                <div class="fg"><label>Grup</label><input type="text" id="aG" placeholder="Haber, Spor…"></div>
+              </div>
+              <div class="form-row">
+                <div class="fg"><label>Stream URL</label><input type="text" id="aU" placeholder="https://…"></div>
+                <div class="fg"><label>Logo URL (opsiyonel)</label><input type="text" id="aL" placeholder="https://…logo.png"></div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-top:6px">
+                <button class="btn btn-acc" onclick="adminAddCh()">+ KANAL EKLE</button>
+              </div>
+            </div>
+            <div class="sec-title">Kanal Listesi (<span id="stTableCount">0</span>)</div>
+            <div class="ch-table">
+              <div class="ch-table-head"><div>#</div><div>Kanal</div><div>URL</div><div>Grup</div><div>İşlem</div></div>
+              <div id="adminChList"></div>
+            </div>
+            <div id="adminMoreWrap" style="text-align:center;padding:12px;display:none">
+              <button class="btn btn-g" onclick="adminShowMore()">Daha fazla göster</button>
+            </div>
+          </div>
+
+          <!-- REKLAMLAR SEKMESİ -->
+          <div id="adminTabAds" class="ad-tab-content">
+            <div class="ad-zone-card">
+              <div class="ad-zone-header">
+                <span class="ad-zone-title">📏 Leaderboard Banner</span>
+                <div class="ad-toggle-wrap">
+                  <div class="ad-status-dot" id="adDot"></div>
+                  <span class="ad-status-lbl" id="adLbl">Kapalı</span>
+                  <button class="ad-toggle-btn" id="adToggleBtn" onclick="toggleAd()">Aç</button>
+                </div>
+              </div>
+              <p style="font-size:12px;color:var(--txt3);margin-bottom:12px">Player'ın hemen altında tam genişlik banner. Boyut: 728×60px</p>
+              <div class="fg"><label>Görsel URL (JPG / PNG / GIF)</label>
+                <input type="text" id="adImgUrl" placeholder="https://…reklam.jpg" oninput="adPreview()"></div>
+              <div class="fg"><label>Tıklama URL'si</label>
+                <input type="text" id="adClickUrl" placeholder="https://reklamveren.com"></div>
+              <div class="ad-preview-box" id="adPreviewBox">Görsel URL girilmedi</div>
+              <div style="display:flex;justify-content:flex-end;margin-top:10px;gap:8px">
+                <button class="btn btn-g" onclick="clearAd()">Temizle</button>
+                <button class="btn btn-acc" onclick="saveAd()">💾 KAYDET</button>
+              </div>
+            </div>
+
+            <div class="sec-title">Aktif Reklamlar</div>
+            <div class="ad-summary-grid" id="adSummary"></div>
+          </div>
+
+          <!-- KULLANICILAR SEKMESİ -->
+          <div id="adminTabUsers" class="ad-tab-content">
+            <div class="sec-title" style="margin-bottom:12px">Kullanıcı Ekle</div>
+            <div class="admin-add-form">
+              <div class="form-row">
+                <div class="fg"><label>Kullanıcı Adı</label><input type="text" id="uN" placeholder="kullanici_adi"></div>
+                <div class="fg"><label>Ad Soyad</label><input type="text" id="uNm" placeholder="Ad Soyad"></div>
+              </div>
+              <div class="form-row">
+                <div class="fg"><label>Şifre</label><input type="password" id="uP" placeholder="••••••••"></div>
+                <div class="fg"><label>Rol</label>
+                  <select id="uR" style="width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:10px 12px;color:var(--txt);outline:none">
+                    <option value="user">Kullanıcı</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-top:6px">
+                <button class="btn btn-acc" onclick="adminAddUser()">+ KULLANICI EKLE</button>
+              </div>
+            </div>
+            <div class="sec-title" style="margin-bottom:10px">Kayıtlı Kullanıcılar</div>
+            <div class="user-table">
+              <div class="user-row user-head"><div>Kullanıcı</div><div>Rol</div><div>Ad</div><div>Sil</div></div>
+              <div id="userList"></div>
+            </div>
+          </div>
+
+          <!-- GRUPLAR SEKMESİ -->
+          <div id="adminTabGroups" class="ad-tab-content">
+            <div class="sec-title" style="margin-bottom:12px">Grup / Kategori Düzenle</div>
+            <p style="font-size:12px;color:var(--txt3);margin-bottom:14px">Kanal gruplarını yeniden adlandırabilirsiniz. Değişiklik sadece bu oturumda geçerlidir.</p>
+            <div style="background:var(--s1);border:1px solid var(--bd);border-radius:var(--r2);overflow:hidden;" id="groupList"></div>
+          </div>
+
+          <!-- SİSTEM SEKMESİ -->
+          <div id="adminTabCache" class="ad-tab-content">
+            <div class="sec-title" style="margin-bottom:12px">Önbellek ve Sistem</div>
+
+            <div class="cache-card">
+              <div class="cache-info">
+                <h4>📡 Playlist Önbelleği</h4>
+                <p id="cacheInfo">Kontrol ediliyor…</p>
+              </div>
+              <div class="cache-actions">
+                <button class="btn btn-acc" onclick="forceRefreshPL()">🔄 Yenile</button>
+                <button class="btn btn-g" onclick="clearCache()">🗑️ Temizle</button>
+              </div>
+            </div>
+
+            <div class="cache-card">
+              <div class="cache-info">
+                <h4>⏱️ Playlist Yenileme Aralığı</h4>
+                <p>Şu an: <span id="cacheIntervalLbl">60 dakika</span></p>
+              </div>
+              <div class="cache-actions">
+                <select id="cacheInterval" onchange="setCacheInterval(this.value)" style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:8px 12px;color:var(--txt);font-size:13px;outline:none">
+                  <option value="15">15 dakika</option>
+                  <option value="30">30 dakika</option>
+                  <option value="60" selected>60 dakika</option>
+                  <option value="120">2 saat</option>
+                  <option value="360">6 saat</option>
+                  <option value="720">12 saat</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="cache-card">
+              <div class="cache-info">
+                <h4>🔴 Kanal Durum Kontrolü</h4>
+                <p id="statusCheckInfo">İlk 20 kanalı kontrol eder</p>
+              </div>
+              <div class="cache-actions">
+                <button class="btn btn-acc" onclick="checkChannelStatus()">Kontrol Et</button>
+              </div>
+            </div>
+
+            <div class="cache-card">
+              <div class="cache-info">
+                <h4>🔗 HTTP Proxy Ayarı</h4>
+                <p>http:// IPTV linklerini https üzerinden oynatmak için domain gir</p>
+                <p style="font-size:11px;color:var(--acc3);margin-top:4px">Örnek: https://senindomain.com/stream/</p>
+              </div>
+              <div class="cache-actions" style="flex-direction:column;align-items:flex-end;gap:6px">
+                <input type="text" id="proxyInput" placeholder="https://domain.com/stream/" value=""
+                  style="background:var(--s2);border:1px solid var(--bd);border-radius:var(--r);padding:7px 10px;color:var(--txt);font-size:12px;outline:none;width:260px">
+                <button class="btn btn-acc" onclick="saveProxy()" style="font-size:12px;padding:6px 14px">Kaydet</button>
+              </div>
+            </div>
+
+            <div class="cache-card">
+              <div class="cache-info">
+                <h4>🗑️ Tüm Verileri Temizle</h4>
+                <p>Önbellek, favoriler, izleme geçmişi silinir</p>
+              </div>
+              <div class="cache-actions">
+                <button class="btn btn-red" onclick="clearAllData()">Sıfırla</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ABOUT PAGE -->
+      <div id="pageAbout" class="sub-page">
+        <div class="page-wrap">
+          <div class="about-hero">
+            <div class="about-hero-logo">📺</div>
+            <h1>VİZİON BOX</h1>
+            <p>Türkiye'nin en gelişmiş IPTV platformu. Tüm kanalları tek çatı altında izleyin.</p>
+            <span class="about-ver">v3.0 PROFESSIONAL</span>
+          </div>
+          <div class="about-cards">
+            <div class="about-card"><div class="about-card-icon">📡</div><h3>M3U / M3U8 / TS</h3><p>HLS, MPEG-TS, DASH formatlarını destekler. 5000+ kanal için sanal kaydırma altyapısı var.</p></div>
+            <div class="about-card"><div class="about-card-icon">🎬</div><h3>Film Oynatıcı</h3><p>MKV, MP4, AVI, MOV ve daha fazlası. Bilgisayardan dosya aç veya playlist film kategorisine tıkla.</p></div>
+            <div class="about-card"><div class="about-card-icon">🔐</div><h3>Admin Paneli</h3><p>Admin hesabıyla giriş yap. Kanal ekle, sil, M3U yükle, istatistikleri gör.</p></div>
+            <div class="about-card"><div class="about-card-icon">📱</div><h3>Mobil Uyumlu</h3><p>Telefon ve tablette tam uyumlu. Hamburger menü ile kolay gezinme.</p></div>
+            <div class="about-card"><div class="about-card-icon">⚡</div><h3>Hızlı Yükleme</h3><p>IndexedDB önbellek ile playlist 1 saat saklanır. Sanal scroll ile 5000 kanal sorunsuz.</p></div>
+            <div class="about-card"><div class="about-card-icon">⭐</div><h3>Favoriler</h3><p>İstediğin kanalları favorilere ekle, hızlıca eriş. Tarayıcıda kalıcı olarak saklanır.</p></div>
+          </div>
+          <div class="sec-title" style="margin-bottom:10px">⌨️ Klavye Kısayolları</div>
+          <div class="kb-table">
+            <div class="kb-row"><span class="kb-desc">Oynat / Duraklat</span><span class="kb-key">SPACE</span></div>
+            <div class="kb-row"><span class="kb-desc">Tam Ekran</span><span class="kb-key">F</span></div>
+            <div class="kb-row"><span class="kb-desc">Ses Kapat</span><span class="kb-key">M</span></div>
+            <div class="kb-row"><span class="kb-desc">Ses Arttır / Azalt</span><span class="kb-key">↑ / ↓</span></div>
+            <div class="kb-row"><span class="kb-desc">Yeniden Yükle</span><span class="kb-key">R</span></div>
+            <div class="kb-row"><span class="kb-desc">Sonraki / Önceki Kanal</span><span class="kb-key">N / B</span></div>
+            <div class="kb-row"><span class="kb-desc">Picture-in-Picture</span><span class="kb-key">P</span></div>
+          </div>
+
+          <!-- GELİŞTİRİCİ -->
+          <div class="sec-title" style="margin-bottom:12px;margin-top:8px">👨‍💻 GELİŞTİRİCİ</div>
+          <div class="dev-card">
+            <span class="dev-badge">💻 DEVELOPER</span>
+       
+
+    </div><!-- /main-panel -->
+  </div><!-- /app-body -->
+</div><!-- /sApp -->
+
+<!-- MODALS -->
+<!-- ADMIN LOGIN MODAL -->
+<div class="modal-bg" id="adminLoginModal">
+  <div class="modal" style="max-width:360px">
+    <h3>🔐 ADMİN GİRİŞİ</h3>
+    <div class="fg">
+      <label>Admin Şifresi</label>
+      <input type="password" id="adminPwInput" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()">
+    </div>
+    <p id="adminPwErr" style="font-size:12px;color:var(--acc2);margin-top:6px;display:none">❌ Yanlış şifre!</p>
+    <div class="modal-acts">
+      <button class="btn btn-g" onclick="closeModal('adminLoginModal')">İptal</button>
+      <button class="btn btn-acc" onclick="doAdminLogin()">GİRİŞ YAP</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="addChModal">
+  <div class="modal">
+    <h3>➕ KANAL EKLE</h3>
+    <div class="fg"><label>Kanal Adı</label><input type="text" id="mN" placeholder="Kanal adı"></div>
+    <div class="fg"><label>Stream URL</label><input type="text" id="mU" placeholder="https://…"></div>
+    <div class="fg"><label>Grup</label><input type="text" id="mG" placeholder="Haber, Spor…"></div>
+    <div class="fg"><label>Logo URL (opsiyonel)</label><input type="text" id="mL" placeholder="https://…"></div>
+    <div class="modal-acts">
+      <button class="btn btn-g" onclick="closeModal('addChModal')">İptal</button>
+      <button class="btn btn-acc" onclick="modalAddCh()">EKLE</button>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="m3uModal">
+  <div class="modal">
+    <h3>📋 M3U YÜKLE</h3>
+    <div class="fg"><label>Playlist URL</label><input type="text" id="m3uUrl" placeholder="http://…playlist.m3u"></div>
+    <p style="font-size:12px;color:var(--txt3);margin-top:6px">Kanallar mevcut listeye eklenir.</p>
+    <div class="modal-acts">
+      <button class="btn btn-g" onclick="closeModal('m3uModal')">İptal</button>
+      <button class="btn btn-acc" onclick="loadM3uUrl()">YÜKLE</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="toast-ico" id="toastIco">ℹ️</span><span id="toastMsg"></span></div>
+
+<script>
+// ════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════
+const PL_URL   = 'https://raw.githubusercontent.com/kadirsener1/tivim/refs/heads/main/merged.m3u';
+const ADMIN_PW = 'Vz!G0#2024$Adm';
+// ── Domain adını buraya yaz, http:// linkleri otomatik proxy'den geçer ──
+// Örnek: 'https://senindomain.com/stream/'
+// Boş bırakırsan http linkler direkt denenecek
+const PROXY_BASE = '';
+
+// ════════════════════════════════════════
+// STORAGE
+// ════════════════════════════════════════
+const ls  = k => localStorage.getItem(k);
+const lss = (k,v) => localStorage.setItem(k,v);
+const lsd = k => localStorage.removeItem(k);
+function getUsers(){ return JSON.parse(ls('vg_users')||'[]'); }
+function saveUsers(u){ lss('vg_users',JSON.stringify(u)); }
+
+// ════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════
+let allCh=[], extraCh=JSON.parse(ls('vg_extra')||'[]');
+let favs=JSON.parse(ls('vg_favs')||'[]');
+let movieLib=JSON.parse(ls('vg_mlib')||'[]');
+let curCh=null, curMovie=null;
+let isAdmin=false, curUser=null;
+let sortAsc=ls('vg_sort')!=='true';
+let curCat='Tümü';
+let hlsInst=null, tsInst=null, movieHls=null;
+let vsFiltered=[], vsItemH=60, vsRAF=null, debTimer=null;
+let recentCh=JSON.parse(ls('vg_recent')||'[]');    // son izlenenler
+let searchHist=JSON.parse(ls('vg_shist')||'[]');   // arama geçmişi
+let offlineChs=new Set();                           // offline kanallar
+let savedVol=parseFloat(ls('vg_vol')||'1');        // ses hafızası
+let cacheIntervalMin=parseInt(ls('vg_cttl')||'60');// cache süresi
+let groupAliases=JSON.parse(ls('vg_grp_alias')||'{}'); // grup aliasları
+let autoNextTimer=null;
+
+// ════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════
+setInterval(()=>{
+  const t=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const el=document.getElementById('hdrClock'); if(el) el.textContent=t;
+  const pt=document.getElementById('pTime'); if(pt) pt.textContent='🔴 CANLI — '+t;
+},1000);
+
+// ════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════
+(function initUsers(){
+  const users=getUsers();
+  const ai=users.findIndex(u=>u.username==='admin');
+  if(ai===-1) users.unshift({username:'admin',password:ADMIN_PW,name:'Admin',role:'admin'});
+  else users[ai].password=ADMIN_PW;
+  saveUsers(users);
+})();
+
+function authTab(t){
+  document.querySelectorAll('.auth-tab').forEach((b,i)=>b.classList.toggle('on',i===(t==='login'?0:1)));
+  document.getElementById('fLogin').classList.toggle('on',t==='login');
+  document.getElementById('fReg').classList.toggle('on',t==='register');
+}
+function doLogin(){
+  const u=document.getElementById('lgUser').value.trim();
+  const p=document.getElementById('lgPass').value;
+  const found=getUsers().find(x=>x.username===u&&x.password===p);
+  if(!found){ document.getElementById('lgErr').style.display='block'; return; }
+  document.getElementById('lgErr').style.display='none';
+  loginOk(found);
+}
+function doRegister(){
+  const name=document.getElementById('rgName').value.trim();
+  const u=document.getElementById('rgUser').value.trim();
+  const p=document.getElementById('rgPass').value;
+  const err=document.getElementById('rgErr');
+  if(!name||!u||!p){ err.textContent='Tüm alanları doldurun!'; err.style.display='block'; return; }
+  const users=getUsers();
+  if(users.find(x=>x.username===u)){ err.textContent='Bu kullanıcı adı alınmış!'; err.style.display='block'; return; }
+  const nu={username:u,password:p,name,role:'user'};
+  users.push(nu); saveUsers(users); err.style.display='none';
+  loginOk(nu);
+}
+function guestLogin(){ loginOk({username:'misafir',name:'Misafir',role:'guest'}); }
+function loginOk(user){
+  curUser=user; isAdmin=user.role==='admin';
+  lss('vg_session',JSON.stringify(user));
+  document.getElementById('hdrAv').textContent=user.name.charAt(0).toUpperCase();
+  document.getElementById('hdrName').textContent=user.name;
+  document.getElementById('mobUserInfo').textContent=user.name+(isAdmin?' (Admin)':'');
+  if(isAdmin){
+    document.getElementById('adminNavBtn').style.display='flex';
+    document.getElementById('mobAdminBtn').style.display='flex';
+    document.getElementById('adminBar').style.display='flex';
+    const alb=document.getElementById('adminLoginBtn');
+    if(alb){ alb.classList.add('on'); document.getElementById('adminLoginTxt').textContent='ADMİN ✓'; }
+  }
+  showScreen('sApp');
+  loadPlaylist();
+  toast('Hoş geldin, '+user.name+'!','👋');
+}
+function doLogout(){
+  if(!confirm('Çıkış yapmak istediğine emin misin?')) return;
+  lsd('vg_session'); curUser=null; isAdmin=false;
+  showScreen('sAuth');
+}
+
+// Auto session restore
+window.addEventListener('DOMContentLoaded',()=>{
+  const s=ls('vg_session');
+  if(s){ try{ loginOk(JSON.parse(s)); }catch{ lsd('vg_session'); } }
+  renderMovieLib();
+});
+
+// ════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+const PAGE_MAP={tv:'pageTv',movies:'pageMovies',favs:'pageFavs',admin:'pageAdmin',about:'pageAbout'};
+function goPage(name){
+  if(name==='admin'&&!isAdmin){ toast('Admin girişi gerekli','🔒'); return; }
+  document.querySelectorAll('.sub-page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('on'));
+  const pg=document.getElementById(PAGE_MAP[name]); if(pg) pg.classList.add('on');
+  // highlight nav tab
+  document.querySelectorAll('.nav-tab').forEach(t=>{
+    if(t.textContent.trim().toLowerCase().includes(
+      name==='tv'?'canli':name==='movies'?'film':name==='favs'?'favori':name==='admin'?'admin':'hakkinda'
+    )) t.classList.add('on');
+  });
+  if(name==='favs') renderFavs();
+  if(name==='admin') renderAdminPage();
+  closeDrawer();
+}
+function toggleDrawer(){
+  const d=document.getElementById('mobDrawer');
+  const b=document.getElementById('hamBtn');
+  const s=document.getElementById('sidebar');
+  const open=d.classList.toggle('open');
+  b.classList.toggle('open',open);
+  if(window.innerWidth<=700) s.classList.toggle('open',open);
+}
+function closeDrawer(){
+  document.getElementById('mobDrawer').classList.remove('open');
+  document.getElementById('hamBtn').classList.remove('open');
+  document.getElementById('sidebar').classList.remove('open');
+}
+function mobGo(name){ goPage(name); }
+window.addEventListener('resize',()=>{ if(window.innerWidth>700) closeDrawer(); });
+
+// ════════════════════════════════════════
+// M3U PARSER
+// ════════════════════════════════════════
+function parseM3U(txt){
+  const res=[]; let cur=null; let id=1;
+  let pos=0, len=txt.length;
+  while(pos<len){
+    let nl=txt.indexOf('\n',pos); if(nl===-1) nl=len;
+    const ln=txt.slice(pos,nl).trim(); pos=nl+1;
+    if(!ln||ln.startsWith('#EXTVLCOPT')||ln.startsWith('#EXTGRP')) continue;
+    if(ln.startsWith('#EXTINF')){
+      cur={id:id++,name:'Kanal',url:'',grp:'Diğer',logo:''};
+      const ci=ln.lastIndexOf(','); if(ci!==-1) cur.name=ln.slice(ci+1).trim();
+      const li=ln.indexOf('tvg-logo="'); if(li!==-1){const le=ln.indexOf('"',li+10);cur.logo=ln.slice(li+10,le);}
+      const gi=ln.indexOf('group-title="'); if(gi!==-1){const ge=ln.indexOf('"',gi+13);cur.grp=ln.slice(gi+13,ge)||'Diğer';}
+    } else if(cur&&(ln.startsWith('http')||ln.startsWith('rtmp')||ln.startsWith('rtsp')||ln.startsWith('udp'))){
+      cur.url=ln; res.push(cur); cur=null;
+    }
+  }
+  return res;
+}
+
+// ════════════════════════════════════════
+// INDEXEDDB
+// ════════════════════════════════════════
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('vg3',1);
+    r.onupgradeneeded=e=>e.target.result.createObjectStore('c');
+    r.onsuccess=e=>res(e.target.result); r.onerror=rej;
+  });
+}
+async function idbGet(k){ try{const db=await idbOpen();return new Promise((res,rej)=>{const tx=db.transaction('c','readonly');const r=tx.objectStore('c').get(k);r.onsuccess=e=>res(e.target.result);r.onerror=rej;});}catch{return null;} }
+async function idbSet(k,v){ try{const db=await idbOpen();return new Promise((res,rej)=>{const tx=db.transaction('c','readwrite');tx.objectStore('c').put(v,k);tx.oncomplete=res;tx.onerror=rej;});}catch{} }
+
+// ════════════════════════════════════════
+// LOAD PLAYLIST
+// ════════════════════════════════════════
+async function loadPlaylist(){
+  const CACHE_TTL=cacheIntervalMin*60*1000;
+  try{
+    const cached=await idbGet('pl'), ctime=await idbGet('plt');
+    if(cached&&cached.length>0&&Date.now()-(ctime||0)<CACHE_TTL){
+      allCh=cached;
+      document.getElementById('sbLoad').style.display='none';
+      renderChannels(); updateAdminStats();
+      toast('⚡ '+allCh.length.toLocaleString('tr')+' kanal (önbellek)','⚡');
+      fetchPL(true); return;
+    }
+  }catch{}
+  await fetchPL(false);
+}
+async function fetchPL(silent){
+  try{
+    if(!silent) toast('Playlist yükleniyor…','📡');
+    const r=await fetch(PL_URL);
+    if(!r.ok) throw new Error(r.status);
+    const txt=await r.text();
+    const chs=await new Promise(ok=>setTimeout(()=>ok(parseM3U(txt)),0));
+    allCh=chs;
+    await idbSet('pl',chs); await idbSet('plt',Date.now());
+    document.getElementById('sbLoad').style.display='none';
+    renderChannels(); updateAdminStats();
+    toast('✅ '+allCh.length.toLocaleString('tr')+' kanal yüklendi','📡');
+  }catch{
+    if(!silent){
+      allCh=[];
+      document.getElementById('sbLoad').style.display='none';
+      renderChannels();
+      toast('⚠️ Playlist yüklenemedi','⚠️');
+    }
+  }
+}
+
+// ════════════════════════════════════════
+// CHANNEL LIST — VIRTUAL SCROLL
+// ════════════════════════════════════════
+function merged(){ return [...allCh,...extraCh]; }
+
+function isFilm(g){ return /sinema|film|movie|vod|dizi|series/i.test(g||''); }
+function grpEmoji(g){
+  const gl=(g||'').toLowerCase();
+  if(/haber|news/.test(gl)) return'📰';
+  if(/spor|sport/.test(gl)) return'⚽';
+  if(/belge|doc/.test(gl))  return'🎬';
+  if(/çocuk|kid/.test(gl))  return'🧒';
+  if(/müzik|music/.test(gl))return'🎵';
+  if(/sinema|film|movie|vod/.test(gl)) return'🍿';
+  if(/dizi|series/.test(gl))return'📽️';
+  if(/dini|reli/.test(gl))  return'☪️';
+  return'📺';
+}
+
+function debRender(){ clearTimeout(debTimer); debTimer=setTimeout(renderChannels,220); }
+
+function renderChannels(){
+  const chs=merged();
+  const q=(document.getElementById('sbSearch').value||'').toLowerCase();
+  // Categories
+  const cats=['Tümü',...new Set(chs.map(c=>c.grp||'Diğer').filter(Boolean))];
+  const catEl=document.getElementById('sbCats');
+  if(catEl.children.length!==Math.min(cats.length,20)){
+    catEl.innerHTML='';
+    cats.slice(0,20).forEach(c=>{
+      const b=document.createElement('button');
+      b.className='cat-pill'+(c===curCat?' on':'');
+      b.textContent=c; b.onclick=()=>{curCat=c;renderChannels();};
+      catEl.appendChild(b);
+    });
+  } else {
+    catEl.querySelectorAll('.cat-pill').forEach((b,i)=>b.classList.toggle('on',cats[i]===curCat));
+  }
+  // Filter
+  let flt=chs.filter(c=>{
+    if(curCat!=='Tümü'&&c.grp!==curCat) return false;
+    if(!q) return true;
+    return c.name.toLowerCase().includes(q)||(c.grp||'').toLowerCase().includes(q);
+  });
+  // Sort
+  if(flt.length<8000) flt=flt.slice().sort((a,b)=>sortAsc?a.name.localeCompare(b.name,'tr'):b.name.localeCompare(a.name,'tr'));
+  vsFiltered=flt;
+  document.getElementById('sbCount').textContent=flt.length.toLocaleString('tr')+' kanal';
+  initVS();
+}
+
+function initVS(){
+  const list=document.getElementById('chList');
+  if(!vsFiltered.length){
+    list.innerHTML='<div style="text-align:center;color:var(--txt3);padding:40px 14px;font-size:13px">Kanal bulunamadı</div>';
+    list.onscroll=null; return;
+  }
+  list.innerHTML='';
+  const sp=document.createElement('div');
+  sp.className='vsp'; sp.style.height=(vsFiltered.length*vsItemH)+'px';
+  list.appendChild(sp);
+  vsRender(list);
+  list.onscroll=()=>{ if(vsRAF) cancelAnimationFrame(vsRAF); vsRAF=requestAnimationFrame(()=>vsRender(list)); };
+}
+
+function vsRender(list){
+  const st=list.scrollTop, vh=list.clientHeight;
+  const s=Math.max(0,Math.floor(st/vsItemH)-5);
+  const e=Math.min(vsFiltered.length-1,Math.ceil((st+vh)/vsItemH)+5);
+  list.querySelectorAll('.ch-item').forEach(el=>el.remove());
+  const frag=document.createDocumentFragment();
+  for(let i=s;i<=e;i++){
+    const ch=vsFiltered[i]; if(!ch) continue;
+    const isFav=favs.includes(ch.id);
+    const d=document.createElement('div');
+    d.className='ch-item'+(curCh&&curCh.id===ch.id?' on':'');
+    d.style.cssText='position:absolute;top:'+(i*vsItemH)+'px;left:6px;right:6px;height:'+(vsItemH-2)+'px';
+    // logo
+    const ld=document.createElement('div'); ld.className='ch-logo';
+    if(ch.logo){
+      const img=document.createElement('img');
+      img.src=ch.logo; img.loading='lazy';
+      img.style.cssText='width:100%;height:100%;object-fit:contain';
+      img.onerror=function(){ this.parentElement.textContent=grpEmoji(ch.grp); };
+      ld.appendChild(img);
+    } else { ld.textContent=grpEmoji(ch.grp); }
+    // meta
+    const md=document.createElement('div'); md.className='ch-meta';
+    const nm=document.createElement('div'); nm.className='ch-name'; nm.textContent=ch.name;
+    const gr=document.createElement('div'); gr.className='ch-grp'; gr.textContent=((groupAliases[ch.grp||'']||ch.grp)||'IPTV')+(isFilm(ch.grp)?' 🍿':'');
+    md.appendChild(nm); md.appendChild(gr);
+    // actions
+    const ad=document.createElement('div'); ad.style.display='flex'; ad.style.gap='4px'; ad.style.flexShrink='0';
+    const fb=document.createElement('button'); fb.className='ch-fav'+(isFav?' on':''); fb.textContent=isFav?'★':'☆';
+    fb.onclick=function(ev){ ev.stopPropagation(); toggleFav(ch.id); };
+    const dt=document.createElement('div'); dt.className='ch-dot';
+    if(offlineChs.has(ch.id)) d.classList.add('ch-offline');
+    ad.appendChild(fb); ad.appendChild(dt);
+    d.appendChild(ld); d.appendChild(md); d.appendChild(ad);
+    d.onclick=()=>goChannel(ch);
+    frag.appendChild(d);
+  }
+  list.appendChild(frag);
+}
+
+function scrollToActive(){
+  if(!curCh) return;
+  const idx=vsFiltered.findIndex(c=>c.id===curCh.id); if(idx===-1) return;
+  const list=document.getElementById('chList'); if(!list) return;
+  list.scrollTo({top:Math.max(0,idx*vsItemH-list.clientHeight/2+vsItemH/2),behavior:'smooth'});
+}
+
+function toggleSort(){ sortAsc=!sortAsc; lss('vg_sort',sortAsc); renderChannels(); }
+
+// ════════════════════════════════════════
+// CHANNEL ROUTING
+// ════════════════════════════════════════
+function goChannel(ch){
+  if(isFilm(ch.grp)){
+    playMovieCh(ch); goPage('movies');
+  } else {
+    playCh(ch); goPage('tv');
+  }
+}
+
+// ════════════════════════════════════════
+// PLAYER UTILS
+// ════════════════════════════════════════
+function detectType(url){
+  let path=url.toLowerCase();
+  try{ path=new URL(url).pathname.toLowerCase(); }catch{}
+  if(path.endsWith('.mpd'))  return'dash';
+  if(path.endsWith('.m3u8')) return'hls';
+  if(path.endsWith('.m3u'))  return'hls';
+  if(path.endsWith('.ts'))   return'ts';
+  const uf=url.toLowerCase();
+  if(uf.includes('.ts?')||uf.includes('.ts&')) return'ts';
+  if(uf.includes('.m3u8?')||uf.includes('.m3u8&')) return'hls';
+  const nat=['.mkv','.mp4','.avi','.mov','.wmv','.flv','.webm','.m4v','.mpeg','.mpg','.3gp'];
+  if(nat.some(e=>path.endsWith(e))) return'native';
+  if(url.startsWith('rtmp://')||url.startsWith('rtmps://')) return'rtmp';
+  if(url.startsWith('rtsp://')) return'ts';
+  return'hls';
+}
+
+function killAll(){
+  if(hlsInst){ hlsInst.destroy(); hlsInst=null; }
+  if(tsInst){ try{tsInst.destroy();}catch{} tsInst=null; }
+  clearAutoNext();
+}
+function clearAutoNext(){
+  if(autoNextTimer){ clearTimeout(autoNextTimer); autoNextTimer=null; }
+  const bar=document.getElementById('autoNextBar');
+  if(bar){ bar.style.transition='none'; bar.style.transform='scaleX(0)'; }
+}
+function startAutoNext(){
+  clearAutoNext();
+  const bar=document.getElementById('autoNextBar'); if(!bar) return;
+  bar.style.transition='none'; bar.style.transform='scaleX(0)';
+  setTimeout(()=>{
+    bar.style.transition='transform 5s linear';
+    bar.style.transform='scaleX(1)';
+  },50);
+  autoNextTimer=setTimeout(()=>{
+    toast('⚠️ Akış hatası — sonraki kanala geçiliyor…','⏭️');
+    nextCh(1);
+  },5000);
+}
+
+function proxyUrl(url){
+  // http:// linkleri proxy üzerinden geçir (Mixed Content çözümü)
+  const base = window._proxyBase || PROXY_BASE || ls('vg_proxy') || '';
+  if(base && url.startsWith('http://')){
+    return base + encodeURIComponent(url);
+  }
+  return url;
+}
+
+function playUrl(vd, url, isLive){
+  url = proxyUrl(url); // http → proxy
+  const t=detectType(url);
+  if(t==='native'){
+    vd.src=url; vd.play().catch(()=>{}); return;
+  }
+  if(t==='ts'&&typeof mpegts!=='undefined'&&mpegts.isSupported()){
+    try{
+      const p=mpegts.createPlayer({type:'mpegts',url,isLive:isLive!==false,enableWorker:true,lazyLoad:false},{enableWorker:true,seekType:'range'});
+      p.attachMediaElement(vd); p.load(); p.play();
+      if(vd.id==='mainVid') tsInst=p;
+      p.on(mpegts.Events.ERROR,(et,ed)=>{ if(ed&&ed.fatal){ if(vd.id==='mainVid'){ killAll(); } playHls(vd,url); } });
+      return;
+    }catch{}
+  }
+  if(t==='dash'){ vd.src=url; vd.play().catch(()=>{}); return; }
+  if(t==='rtmp'){ toast('RTMP tarayıcıda desteklenmiyor','⚠️'); return; }
+  playHls(vd,url);
+}
+
+function playHls(vd,url){
+  if(Hls.isSupported()){
+    var inst=new Hls({enableWorker:true,lowLatencyMode:true,maxBufferLength:30,maxMaxBufferLength:60,fragLoadingTimeOut:20000,manifestLoadingTimeOut:15000});
+    inst.loadSource(url);
+    inst.attachMedia(vd);
+    inst.on(Hls.Events.MANIFEST_PARSED,function(){ vd.play().catch(function(){}); showBuf(false); });
+    inst.on(Hls.Events.ERROR,function(e,d){ if(d.fatal){ inst.destroy(); showBuf(false); startAutoNext(); } });
+    if(vd.id==='mainVid') hlsInst=inst; else movieHls=inst;
+  } else if(vd.canPlayType('application/x-mpegURL')){
+    vd.src=url; vd.play().catch(function(){}); showBuf(false);
+  } else {
+    vd.src=url; vd.play().catch(function(){}); showBuf(false);
+  }
+}
+
+
+// ════════════════════════════════════════
+// TV PLAYER
+// ════════════════════════════════════════
+function showBuf(v){ const el=document.getElementById('pBuf'); if(el) el.classList.toggle('on',v); }
+
+function playCh(ch){
+  curCh=ch;
+  document.getElementById('pEmpty').style.display='none';
+  document.getElementById('pTitle').textContent=ch.name;
+  document.getElementById('pGrp').textContent=ch.grp||'';
+  if(isAdmin){ const u=document.getElementById('adminUrl'); if(u) u.value=ch.url; }
+  const vd=document.getElementById('mainVid');
+  killAll(); showBuf(true);
+  // Ses hafızası uygula
+  vd.volume=savedVol; document.querySelector('.vol-slider').value=savedVol*100;
+  const vp=document.getElementById('volPct'); if(vp) vp.textContent=Math.round(savedVol*100)+'%';
+  playUrl(vd, ch.url, true);
+  updatePlayBtn();
+  addRecent(ch);
+  renderChannels();
+  renderEpg();
+  setTimeout(scrollToActive,80);
+  toast('📺 '+ch.name,'🔴');
+}
+
+function restartStream(){ if(curCh) playCh(curCh); }
+function togglePlay(){ const v=document.getElementById('mainVid'); v.paused?v.play():v.pause(); updatePlayBtn(); }
+function updatePlayBtn(){
+  const v=document.getElementById('mainVid');
+  setTimeout(()=>{
+    const b=document.getElementById('playBtn'); if(!b) return;
+    b.innerHTML=v.paused
+      ?'<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+      :'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>';
+  },80);
+}
+function toggleMute(){ const v=document.getElementById('mainVid'); v.muted=!v.muted; }
+function setVol(val){
+  const v=document.getElementById('mainVid'); v.volume=val/100; v.muted=val==0;
+  savedVol=val/100; lss('vg_vol',savedVol);
+  const vp=document.getElementById('volPct'); if(vp) vp.textContent=Math.round(val)+'%';
+}
+function doFS(){ const e=document.getElementById('playerWrap'); if(!document.fullscreenElement) e.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); }
+function doPiP(){ const v=document.getElementById('mainVid'); if(document.pictureInPictureElement) document.exitPictureInPicture().catch(()=>{}); else if(v.readyState) v.requestPictureInPicture().catch(()=>toast('PiP desteklenmiyor','⚠️')); }
+function setQual(q){
+  document.getElementById('qualLabel').textContent=q===-1?'OTO':(q+'p');
+  document.querySelectorAll('.p-qual-item').forEach(b=>b.classList.toggle('on',b.textContent.includes(q===-1?'Otomatik':q+'')));
+  if(hlsInst){ if(q===-1){ hlsInst.currentLevel=-1; } else { const ls=hlsInst.levels; let best=-1; ls.forEach((l,i)=>{ if(l.height<=q&&(best===-1||l.height>ls[best].height)) best=i; }); if(best!==-1) hlsInst.currentLevel=best; } }
+  toast('Kalite: '+(q===-1?'Otomatik':q+'p'),'🎯');
+}
+
+document.getElementById('mainVid').addEventListener('play',updatePlayBtn);
+document.getElementById('mainVid').addEventListener('pause',updatePlayBtn);
+document.getElementById('mainVid').addEventListener('waiting',()=>showBuf(true));
+document.getElementById('mainVid').addEventListener('playing',()=>showBuf(false));
+
+function adminPlay(){
+  if(!isAdmin) return;
+  const url=(document.getElementById('adminUrl').value||'').trim();
+  if(!url){ toast('URL girin','⚠️'); return; }
+  curCh={id:'manual',name:url.split('/').pop().split('?')[0]||'Akış',url,grp:'Manuel',logo:''};
+  document.getElementById('pEmpty').style.display='none';
+  document.getElementById('pTitle').textContent=curCh.name;
+  document.getElementById('pGrp').textContent='Manuel';
+  const vd=document.getElementById('mainVid');
+  killAll(); showBuf(true);
+  playUrl(vd,url,true);
+  updatePlayBtn();
+  toast('▶️ Yükleniyor…','📡');
+}
+
+// ════════════════════════════════════════
+// EPG
+// ════════════════════════════════════════
+function renderEpg(){
+  if(!curCh) return;
+  const progs=['Ana Haber','Belgesel','Spor Özel','Film Kuşağı','Talk Show','Gece Haberleri','Müzik Özel','Magazin','Sabah Kuşağı'];
+  const now=new Date(); let t=new Date(now); t.setMinutes(0,0,0);
+  const slots=[]; for(let i=0;i<7;i++){ const d=(Math.random()>.5?60:30); const end=new Date(t.getTime()+d*60000); slots.push({s:new Date(t),e:end,n:progs[i%progs.length],live:t<=now&&now<end}); t=end; }
+  const el=document.getElementById('epgSlots'); if(!el) return;
+  el.innerHTML='';
+  slots.forEach(s=>{
+    const d=document.createElement('div'); d.className='epg-slot'+(s.live?' live':'');
+    const ft=d2=>d2.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    const pct=s.live?Math.round(((Date.now()-s.s)/(s.e-s.s))*100):0;
+    d.innerHTML='<span class="epg-time">'+ft(s.s)+'</span><span class="epg-name">'+s.n+'</span>'+(s.live?'<div class="epg-pb"><div class="epg-pb-fill" style="width:'+pct+'%"></div></div>':'');
+    el.appendChild(d);
+  });
+}
+
+// ════════════════════════════════════════
+// FAVORITES
+// ════════════════════════════════════════
+function toggleFav(id){
+  const i=favs.indexOf(id);
+  if(i===-1){ favs.push(id); toast('Favorilere eklendi','⭐'); }
+  else { favs.splice(i,1); toast('Favorilerden çıkarıldı','🗑️'); }
+  lss('vg_favs',JSON.stringify(favs));
+  renderChannels(); renderFavs(); updateAdminStats();
+}
+function renderFavs(){
+  const chs=merged().filter(c=>favs.includes(c.id));
+  const g=document.getElementById('favsGrid');
+  const e=document.getElementById('favsEmpty');
+  g.innerHTML='';
+  if(!chs.length){ e.style.display='block'; return; }
+  e.style.display='none';
+  chs.forEach(ch=>{
+    const d=document.createElement('div'); d.className='fav-card';
+    const ld=document.createElement('div'); ld.className='fav-logo';
+    if(ch.logo){ const img=document.createElement('img'); img.src=ch.logo; img.style.cssText='width:100%;height:100%;object-fit:contain'; img.onerror=function(){this.parentElement.textContent=grpEmoji(ch.grp);}; ld.appendChild(img); } else { ld.textContent=grpEmoji(ch.grp); }
+    d.innerHTML='<button class="fav-rm" onclick="event.stopPropagation();toggleFav('+ch.id+')">✕</button>';
+    d.appendChild(ld);
+    d.innerHTML+='<div class="fav-name">'+ch.name+'</div><div class="fav-grp">'+(ch.grp||'IPTV')+'</div>';
+    d.onclick=()=>goChannel(ch);
+    g.appendChild(d);
+  });
+}
+
+// ════════════════════════════════════════
+// MOVIE PLAYER
+// ════════════════════════════════════════
+function showMovieBuf(v){ const el=document.getElementById('movieBuf'); if(el) el.classList.toggle('on',v); }
+function fmtT(s){ if(!isFinite(s)||isNaN(s)) return'0:00'; const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=Math.floor(s%60); return h>0?h+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'):m+':'+String(sec).padStart(2,'0'); }
+
+function movieOpenFile(e){
+  const file=e.target.files[0]; if(!file) return;
+  const url=URL.createObjectURL(file);
+  const ext=file.name.split('.').pop().toUpperCase();
+  const entry={id:'m'+Date.now(),name:file.name,url,ext,local:true};
+  movieLib=movieLib.filter(m=>m.name!==file.name); movieLib.unshift(entry);
+  if(movieLib.length>20) movieLib.pop();
+  const meta=movieLib.map(m=>({id:m.id,name:m.name,ext:m.ext,local:m.local,url:m.local?'':m.url}));
+  lss('vg_mlib',JSON.stringify(meta));
+  playMovieEntry(entry); renderMovieLib(); e.target.value='';
+}
+
+function playMovieCh(ch){
+  const entry={id:'c'+ch.id,name:ch.name,url:ch.url,ext:'',local:false};
+  playMovieEntry(entry);
+}
+
+function playMovieEntry(entry){
+  curMovie=entry;
+  const vd=document.getElementById('movieVid'); if(!vd) return;
+  if(movieHls){ movieHls.destroy(); movieHls=null; }
+  vd.pause(); vd.removeAttribute('src'); vd.load();
+  const ee=document.getElementById('movieEmpty'); if(ee) ee.style.display='none';
+  const tt=document.getElementById('movieTitle'); if(tt) tt.textContent=entry.name;
+  showMovieBuf(true);
+  playUrl(vd, entry.url, false);
+  updateMovieBtn();
+  renderMovieLib();
+  toast('🎬 '+entry.name,'🎬');
+}
+
+function toggleMoviePlay(){ const v=document.getElementById('movieVid'); if(!v) return; v.paused?v.play():v.pause(); updateMovieBtn(); }
+function updateMovieBtn(){
+  const v=document.getElementById('movieVid'); if(!v) return;
+  setTimeout(()=>{
+    const b=document.getElementById('moviePlayBtn'); if(!b) return;
+    b.innerHTML=v.paused
+      ?'<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+      :'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>';
+  },80);
+}
+function movieSkip(s){ const v=document.getElementById('movieVid'); if(!v) return; v.currentTime=Math.max(0,Math.min(v.duration||0,v.currentTime+s)); }
+function toggleMovieMute(){ const v=document.getElementById('movieVid'); if(v) v.muted=!v.muted; }
+function setMovieVol(val){ const v=document.getElementById('movieVid'); if(!v) return; v.volume=val/100; v.muted=val==0; }
+function setMovieSpeed(val){ const v=document.getElementById('movieVid'); if(v) v.playbackRate=parseFloat(val); }
+function doFSMovie(){ const e=document.getElementById('movieWrap'); if(!document.fullscreenElement) e.requestFullscreen().catch(()=>{}); else document.exitFullscreen(); }
+function doPiPMovie(){ const v=document.getElementById('movieVid'); if(!v) return; if(document.pictureInPictureElement) document.exitPictureInPicture().catch(()=>{}); else if(v.readyState) v.requestPictureInPicture().catch(()=>toast('PiP desteklenmiyor','⚠️')); }
+
+// Seek
+let isSeeking=false;
+function seekStart(e){
+  const v=document.getElementById('movieVid'); if(!v||!v.duration) return;
+  isSeeking=true; seekTo(e);
+  const up=()=>{ isSeeking=false; document.removeEventListener('mouseup',up); document.removeEventListener('mousemove',mv); };
+  const mv=ev=>{ if(isSeeking) seekTo(ev); };
+  document.addEventListener('mouseup',up); document.addEventListener('mousemove',mv);
+}
+function seekTo(e){
+  const v=document.getElementById('movieVid'); if(!v||!v.duration) return;
+  const el=document.getElementById('movieSeek'); if(!el) return;
+  const r=el.getBoundingClientRect();
+  const p=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+  v.currentTime=p*v.duration;
+}
+function hideTip(){ var t=document.getElementById('seekTip'); if(t) t.style.display='none'; }
+function seekHover(e){
+  const v=document.getElementById('movieVid'); if(!v||!v.duration) return;
+  const el=document.getElementById('movieSeek'), tip=document.getElementById('seekTip');
+  if(!el||!tip) return;
+  const r=el.getBoundingClientRect();
+  const p=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+  tip.textContent=fmtT(p*v.duration); tip.style.display='block'; tip.style.left=(p*100)+'%';
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const mv=document.getElementById('movieVid'); if(!mv) return;
+  mv.addEventListener('timeupdate',()=>{
+    const cur=mv.currentTime, dur=mv.duration||0;
+    const tEl=document.getElementById('movieTime'); if(tEl) tEl.textContent=fmtT(cur)+' / '+fmtT(dur);
+    const pct=dur>0?(cur/dur*100):0;
+    const sf=document.getElementById('seekFill'), st=document.getElementById('seekThumb');
+    if(sf) sf.style.width=pct+'%';
+    if(st) st.style.left=pct+'%';
+    if(dur>0&&mv.buffered.length){ const be=mv.buffered.end(mv.buffered.length-1); const sb=document.getElementById('seekBuf'); if(sb) sb.style.width=(be/dur*100)+'%'; }
+  });
+  mv.addEventListener('play',updateMovieBtn);
+  mv.addEventListener('pause',updateMovieBtn);
+  mv.addEventListener('waiting',()=>showMovieBuf(true));
+  mv.addEventListener('playing',()=>showMovieBuf(false));
+  mv.addEventListener('ended',()=>{ updateMovieBtn(); toast('Film bitti','✅'); });
+});
+
+function renderMovieLib(){
+  movieLib=movieLib.filter(m=>!m.local);
+  const lib=document.getElementById('movieLib'), grid=document.getElementById('libGrid'), cnt=document.getElementById('libCount');
+  if(!lib||!grid) return;
+  if(!movieLib.length){ lib.style.display='none'; return; }
+  lib.style.display='block'; if(cnt) cnt.textContent=movieLib.length;
+  grid.innerHTML='';
+  movieLib.forEach(m=>{
+    const d=document.createElement('div');
+    d.className='movie-lib-item'+(curMovie&&curMovie.id===m.id?' on':'');
+    const icon=['MKV','AVI','MOV','WMV'].includes(m.ext)?'🎞️':['MP4','M4V','WEBM'].includes(m.ext)?'🎬':'📹';
+    const nm=document.createElement('span'); nm.className='movie-lib-name'; nm.textContent=m.name;
+    const ex=document.createElement('span'); ex.className='movie-lib-ext'; ex.textContent=m.ext;
+    const rm=document.createElement('button'); rm.className='movie-lib-rm'; rm.textContent='✕';
+    rm.onclick=function(ev){ ev.stopPropagation(); movieLib=movieLib.filter(x=>x.id!==m.id); lss('vg_mlib',JSON.stringify(movieLib)); renderMovieLib(); };
+    d.textContent=icon; d.appendChild(nm); d.appendChild(ex); d.appendChild(rm);
+    if(m.url) d.onclick=()=>playMovieEntry(m);
+    else d.onclick=()=>toast('Yerel dosya — tekrar seç','📂');
+    grid.appendChild(d);
+  });
+}
+function clearLib(){ movieLib=[]; lss('vg_mlib','[]'); renderMovieLib(); }
+
+function copyContact(){
+  navigator.clipboard.writeText('Telegram: @Zaferri').then(function(){
+    toast('📋 İletişim kopyalandı!','📋');
+  }).catch(function(){
+    toast('t.me/Zaferri','📋');
+  });
+}
+
+// ════════════════════════════════════════
+// ADMIN
+// ════════════════════════════════════════
+function updateAdminStats(){
+  const t=document.getElementById('stTotal'); if(t) t.textContent=merged().length.toLocaleString('tr');
+  const f=document.getElementById('stFavs'); if(f) f.textContent=favs.length;
+  const u=document.getElementById('stUsers'); if(u) u.textContent=getUsers().length;
+  const m=document.getElementById('stMovies'); if(m) m.textContent=movieLib.length;
+  const c=document.getElementById('stTableCount'); if(c) c.textContent=merged().length.toLocaleString('tr');
+  // recent & search geçmiş sayıları
+}
+let adminOffset=0;
+function renderAdminPage(){
+  updateAdminStats(); adminOffset=0;
+  renderRecentBar();
+  const el=document.getElementById('adminChList'); if(!el) return;
+  el.innerHTML='';
+  renderAdminRows(0,200);
+}
+function renderAdminRows(from,count){
+  const chs=merged();
+  const el=document.getElementById('adminChList'); if(!el) return;
+  chs.slice(from,from+count).forEach((ch,i)=>{
+    const row=document.createElement('div'); row.className='ch-table-row';
+    row.innerHTML='<div class="ch-tnum">'+(from+i+1)+'</div>'
+      +'<div class="ch-tname">'+ch.name+'</div>'
+      +'<div class="ch-turl">'+ch.url+'</div>'
+      +'<div><span class="ch-tgrp">'+(ch.grp||'Diğer')+'</span></div>'
+      +'<div><button class="ch-tdel" onclick="adminDelCh(\''+ch.id+'\')">✕ Sil</button></div>';
+    el.appendChild(row);
+  });
+  adminOffset=from+count;
+  const mw=document.getElementById('adminMoreWrap');
+  if(mw) mw.style.display=adminOffset<chs.length?'block':'none';
+}
+function adminShowMore(){ renderAdminRows(adminOffset,500); }
+function adminDelCh(id){
+  if(id.toString().startsWith('e')){ extraCh=extraCh.filter(c=>c.id!=id); lss('vg_extra',JSON.stringify(extraCh)); }
+  else { allCh=allCh.filter(c=>c.id!=id); }
+  renderChannels(); renderAdminPage(); toast('Kanal silindi','🗑️');
+}
+function adminAddCh(){
+  const n=(document.getElementById('aN').value||'').trim();
+  const u=(document.getElementById('aU').value||'').trim();
+  const g=(document.getElementById('aG').value||'Diğer').trim();
+  const l=(document.getElementById('aL').value||'').trim();
+  if(!n||!u){ toast('Ad ve URL zorunlu','⚠️'); return; }
+  extraCh.push({id:'e'+Date.now(),name:n,url:u,grp:g,logo:l});
+  lss('vg_extra',JSON.stringify(extraCh));
+  ['aN','aU','aG','aL'].forEach(id=>document.getElementById(id).value='');
+  renderChannels(); renderAdminPage(); toast('✅ Kanal eklendi: '+n,'✅');
+}
+function modalAddCh(){
+  const n=(document.getElementById('mN').value||'').trim();
+  const u=(document.getElementById('mU').value||'').trim();
+  const g=(document.getElementById('mG').value||'Diğer').trim();
+  const l=(document.getElementById('mL').value||'').trim();
+  if(!n||!u){ toast('Ad ve URL zorunlu','⚠️'); return; }
+  extraCh.push({id:'e'+Date.now(),name:n,url:u,grp:g,logo:l});
+  lss('vg_extra',JSON.stringify(extraCh));
+  closeModal('addChModal');
+  ['mN','mU','mG','mL'].forEach(id=>document.getElementById(id).value='');
+  renderChannels(); renderAdminPage(); toast('✅ '+n+' eklendi','✅');
+}
+async function loadM3uUrl(){
+  const url=(document.getElementById('m3uUrl').value||'').trim();
+  if(!url){ toast('URL girin','⚠️'); return; }
+  closeModal('m3uModal'); toast('Yükleniyor…','⏳');
+  try{
+    const r=await fetch(url); const txt=await r.text();
+    const p=parseM3U(txt); if(!p.length){ toast('Kanal bulunamadı','⚠️'); return; }
+    extraCh=[...extraCh,...p]; lss('vg_extra',JSON.stringify(extraCh));
+    renderChannels(); renderAdminPage(); toast('✅ '+p.length+' kanal eklendi','📡');
+  }catch{ toast('Playlist yüklenemedi','❌'); }
+}
+
+// ════════════════════════════════════════
+// MODAL & TOAST
+// ════════════════════════════════════════
+function openModal(id){ document.getElementById(id).classList.add('on'); }
+function closeModal(id){ document.getElementById(id).classList.remove('on'); }
+document.querySelectorAll('.modal-bg').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el) el.classList.remove('on'); }));
+let toastTmr;
+function toast(msg,ico='ℹ️'){
+  const t=document.getElementById('toast');
+  document.getElementById('toastIco').textContent=ico;
+  document.getElementById('toastMsg').textContent=msg;
+  t.classList.add('on'); clearTimeout(toastTmr);
+  toastTmr=setTimeout(()=>t.classList.remove('on'),3200);
+}
+
+// ════════════════════════════════════════
+// AD SYSTEM
+// ════════════════════════════════════════
+const AD_KEY = 'vg_ads';
+function getAdCfg(){ return JSON.parse(localStorage.getItem(AD_KEY)||'{}'); }
+function saveAdCfg(c){ localStorage.setItem(AD_KEY,JSON.stringify(c)); }
+
+function adminTab(t){
+  const tabs=['channels','ads','users','groups','cache'];
+  document.querySelectorAll('.ad-tab-btn').forEach((b,i)=>b.classList.toggle('on',tabs[i]===t));
+  ['adminTabChannels','adminTabAds','adminTabUsers','adminTabGroups','adminTabCache'].forEach((id,i)=>{
+    const el=document.getElementById(id); if(el) el.classList.toggle('on',tabs[i]===t);
+  });
+  if(t==='ads') renderAdPage();
+  if(t==='users') renderUserList();
+  if(t==='groups') renderGroupList();
+  if(t==='cache') renderCacheInfo();
+}
+
+function renderAdPage(){
+  const cfg=getAdCfg();
+  const imgEl=document.getElementById('adImgUrl');
+  const urlEl=document.getElementById('adClickUrl');
+  if(imgEl&&cfg.img) imgEl.value=cfg.img;
+  if(urlEl&&cfg.url) urlEl.value=cfg.url;
+  updateAdUI(!!cfg.on);
+  adPreview();
+  renderAdSummary();
+}
+
+function updateAdUI(isOn){
+  const dot=document.getElementById('adDot');
+  const lbl=document.getElementById('adLbl');
+  const btn=document.getElementById('adToggleBtn');
+  if(!dot) return;
+  dot.classList.toggle('on',isOn);
+  lbl.textContent=isOn?'Aktif':'Kapalı';
+  lbl.style.color=isOn?'var(--acc4)':'var(--txt3)';
+  btn.textContent=isOn?'Kapat':'Aç';
+  btn.classList.toggle('on',isOn);
+}
+
+function toggleAd(){
+  const cfg=getAdCfg();
+  cfg.on=!cfg.on;
+  saveAdCfg(cfg);
+  updateAdUI(cfg.on);
+  applyAd();
+  renderAdSummary();
+  toast(cfg.on?'✅ Reklam açıldı':'🔴 Reklam kapatıldı', cfg.on?'✅':'🔴');
+}
+
+function saveAd(){
+  const cfg=getAdCfg();
+  cfg.img=(document.getElementById('adImgUrl').value||'').trim();
+  cfg.url=(document.getElementById('adClickUrl').value||'').trim();
+  saveAdCfg(cfg);
+  applyAd();
+  renderAdSummary();
+  toast('💾 Reklam kaydedildi','💾');
+}
+
+function clearAd(){
+  saveAdCfg({});
+  const imgEl=document.getElementById('adImgUrl');
+  const urlEl=document.getElementById('adClickUrl');
+  if(imgEl) imgEl.value='';
+  if(urlEl) urlEl.value='';
+  document.getElementById('adPreviewBox').innerHTML='Görsel URL girilmedi';
+  updateAdUI(false);
+  applyAd();
+  renderAdSummary();
+  toast('Reklam temizlendi','🗑️');
+}
+
+function adPreview(){
+  const url=(document.getElementById('adImgUrl')||{}).value||'';
+  const box=document.getElementById('adPreviewBox'); if(!box) return;
+  if(url.trim()){
+    const img=document.createElement('img');
+    img.src=url.trim();
+    img.style.cssText='max-height:48px;max-width:100%;object-fit:contain;border-radius:4px';
+    img.onerror=function(){ this.parentElement.textContent='Yuklenemedi'; };
+    box.innerHTML=''; box.appendChild(img);
+  } else {
+    box.innerHTML='Görsel URL girilmedi';
+  }
+}
+
+function applyAd(){
+  const cfg=getAdCfg();
+  const el=document.getElementById('adLeader');
+  const inner=document.getElementById('adLeaderInner');
+  if(!el||!inner) return;
+  inner.innerHTML='';
+  if(cfg.on&&cfg.img){
+    const img=document.createElement('img');
+    img.src=cfg.img;
+    img.alt='Reklam';
+    img.style.cssText='max-height:60px;max-width:100%;object-fit:contain;border-radius:6px';
+    img.onerror=function(){ this.style.display='none'; };
+    inner.appendChild(img);
+    el.classList.add('on');
+    el.onclick=function(){ if(cfg.url) window.open(cfg.url,'_blank'); };
+  } else {
+    const ph=document.createElement('div');
+    ph.className='ad-leader-placeholder';
+    ph.innerHTML='<span>📢</span><span>728x60 — Leaderboard Banner</span>';
+    inner.appendChild(ph);
+    el.classList.remove('on');
+    el.onclick=function(){ if(isAdmin){ goPage('admin'); setTimeout(function(){adminTab('ads');},100); } };
+  }
+}
+
+function adLeaderClick(){
+  const cfg=getAdCfg();
+  if(cfg.on&&cfg.url) window.open(cfg.url,'_blank');
+  else if(isAdmin){ goPage('admin'); setTimeout(()=>adminTab('ads'),100); }
+}
+
+function renderAdSummary(){
+  const cfg=getAdCfg();
+  const el=document.getElementById('adSummary'); if(!el) return;
+  el.innerHTML='<div class="ad-sum-card">'
+    +'<span class="ad-sum-icon">📏</span>'
+    +'<div><div class="ad-sum-name">Leaderboard Banner</div>'
+    +'<div class="ad-sum-status'+(cfg.on?' on':'')+'">'+( cfg.on?'● Aktif':'○ Kapalı')+'</div></div>'
+    +'<div style="margin-left:auto"><button class="ad-toggle-btn'+(cfg.on?' on':'')+'" onclick="toggleAd()">'+(cfg.on?'Kapat':'Aç')+'</button></div>'
+    +'</div>';
+}
+
+// Sayfa açılışında reklamı uygula
+document.addEventListener('DOMContentLoaded',()=>{ setTimeout(applyAd,500); });
+
+
+// ════════════════════════════════════════
+// SON İZLENENLER
+// ════════════════════════════════════════
+function addRecent(ch){
+  recentCh=recentCh.filter(c=>c.id!==ch.id);
+  recentCh.unshift({id:ch.id,name:ch.name,grp:ch.grp,logo:ch.logo,url:ch.url});
+  if(recentCh.length>10) recentCh.pop();
+  lss('vg_recent',JSON.stringify(recentCh));
+  renderRecentBar();
+}
+function renderRecentBar(){
+  const bar=document.getElementById('recentBar');
+  const chips=document.getElementById('recentChips');
+  if(!bar||!chips) return;
+  if(!recentCh.length){ bar.style.display='none'; return; }
+  bar.style.display='flex'; chips.innerHTML='';
+  recentCh.slice(0,8).forEach(ch=>{
+    const d=document.createElement('div'); d.className='recent-chip';
+    const em=grpEmoji(ch.grp);
+    d.innerHTML='<span style="font-size:13px">'+em+'</span><span class="recent-chip-name">'+ch.name+'</span>';
+    d.onclick=()=>goChannel(ch);
+    chips.appendChild(d);
+  });
+}
+
+// ════════════════════════════════════════
+// ARAMA GEÇMİŞİ
+// ════════════════════════════════════════
+function addSearchHist(q){
+  if(!q||q.length<2) return;
+  searchHist=searchHist.filter(s=>s!==q);
+  searchHist.unshift(q);
+  if(searchHist.length>8) searchHist.pop();
+  lss('vg_shist',JSON.stringify(searchHist));
+}
+function showSearchHist(){
+  const q=(document.getElementById('sbSearch').value||'').trim();
+  const el=document.getElementById('searchHist'); if(!el) return;
+  const items=q?searchHist.filter(s=>s.toLowerCase().includes(q.toLowerCase())):searchHist;
+  if(!items.length){ el.classList.remove('on'); return; }
+  el.innerHTML='';
+  items.forEach(s=>{
+    const d=document.createElement('div'); d.className='sh-item';
+    d.innerHTML='🕐 '+s;
+    d.onclick=()=>{ document.getElementById('sbSearch').value=s; debRender(); hideSearchHist(); };
+    el.appendChild(d);
+  });
+  if(searchHist.length){
+    const clr=document.createElement('button'); clr.className='sh-clear';
+    clr.textContent='Geçmişi Temizle';
+    clr.onclick=()=>{ searchHist=[]; lss('vg_shist','[]'); hideSearchHist(); };
+    el.appendChild(clr);
+  }
+  el.classList.add('on');
+}
+function hideSearchHist(){ const el=document.getElementById('searchHist'); if(el) el.classList.remove('on'); }
+
+// ════════════════════════════════════════
+// SCREENSHOT
+// ════════════════════════════════════════
+function takeScreenshot(){
+  const vd=document.getElementById('mainVid');
+  if(!vd||!vd.videoWidth){ toast('Video yok','⚠️'); return; }
+  try{
+    const cv=document.createElement('canvas');
+    cv.width=vd.videoWidth; cv.height=vd.videoHeight;
+    cv.getContext('2d').drawImage(vd,0,0);
+    const a=document.createElement('a');
+    a.href=cv.toDataURL('image/png');
+    a.download=(curCh?curCh.name:'ekran')+'_'+new Date().toISOString().slice(0,19).replace(/:/g,'-')+'.png';
+    a.click();
+    // flash efekti
+    const fl=document.getElementById('screenshotFlash');
+    if(fl){ fl.style.opacity='.6'; setTimeout(()=>fl.style.opacity='0',150); }
+    toast('📸 Ekran görüntüsü kaydedildi','📸');
+  }catch(e){ toast('Ekran görüntüsü alınamadı (CORS)','⚠️'); }
+}
+
+// ════════════════════════════════════════
+// SWIPE (dokunmatik kanal geçişi)
+// ════════════════════════════════════════
+function initSwipe(){
+  const el=document.getElementById('playerWrap'); if(!el) return;
+  let sx=0,sy=0;
+  el.addEventListener('touchstart',e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; },{passive:true});
+  el.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-sx;
+    const dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)<Math.abs(dy)||Math.abs(dx)<60) return;
+    const left=document.getElementById('swipeLeft');
+    const right=document.getElementById('swipeRight');
+    if(dx<0){
+      if(right){ right.classList.add('vis'); setTimeout(()=>right.classList.remove('vis'),600); }
+      nextCh(1);
+    } else {
+      if(left){ left.classList.add('vis'); setTimeout(()=>left.classList.remove('vis'),600); }
+      nextCh(-1);
+    }
+  },{passive:true});
+  // Tam ekranda yatay mod
+  document.addEventListener('fullscreenchange',()=>{
+    if(document.fullscreenElement && screen.orientation && screen.orientation.lock){
+      screen.orientation.lock('landscape').catch(()=>{});
+    }
+  });
+}
+
+// ════════════════════════════════════════
+// KANAL DURUM KONTROLÜ
+// ════════════════════════════════════════
+async function checkChannelStatus(){
+  const chs=merged().slice(0,20);
+  toast('🔍 '+chs.length+' kanal kontrol ediliyor…','🔍');
+  document.getElementById('statusCheckInfo').textContent='Kontrol ediliyor…';
+  offlineChs.clear();
+  let ok=0, fail=0;
+  for(const ch of chs){
+    try{
+      const r=await fetch(ch.url,{method:'HEAD',signal:AbortSignal.timeout(4000)});
+      if(!r.ok) throw new Error();
+      ok++;
+    }catch{
+      offlineChs.add(ch.id); fail++;
+    }
+  }
+  renderChannels();
+  document.getElementById('statusCheckInfo').textContent='Sonuç: '+ok+' çevrimiçi, '+fail+' erişilemez ('+chs.length+' kanaldan)';
+  toast('✅ Kontrol bitti: '+ok+' çevrimiçi, '+fail+' hatalı','✅');
+}
+
+// ════════════════════════════════════════
+// CACHE / SİSTEM YÖNETİMİ
+// ════════════════════════════════════════
+async function renderCacheInfo(){
+  const t=await idbGet('plt');
+  const el=document.getElementById('cacheInfo'); if(!el) return;
+  if(t){
+    const mins=Math.round((Date.now()-t)/60000);
+    el.textContent=allCh.length.toLocaleString('tr')+' kanal — '+mins+' dakika önce yüklendi';
+  } else {
+    el.textContent='Önbellekte veri yok';
+  }
+  const ci=parseInt(ls('vg_cttl')||'60');
+  const sel=document.getElementById('cacheInterval');
+  if(sel) sel.value=ci;
+  const lbl=document.getElementById('cacheIntervalLbl');
+  if(lbl) lbl.textContent=ci>=60?(ci/60)+' saat':ci+' dakika';
+}
+async function forceRefreshPL(){
+  await idbSet('plt',0);
+  toast('🔄 Playlist yenileniyor…','📡');
+  await fetchPL(false);
+}
+async function clearCache(){
+  if(!confirm('Önbellek temizlensin mi?')) return;
+  await idbSet('pl',[]); await idbSet('plt',0);
+  allCh=[];
+  renderChannels(); renderCacheInfo();
+  toast('🗑️ Önbellek temizlendi','🗑️');
+}
+function setCacheInterval(val){
+  cacheIntervalMin=parseInt(val);
+  lss('vg_cttl',cacheIntervalMin);
+  const lbl=document.getElementById('cacheIntervalLbl');
+  if(lbl) lbl.textContent=cacheIntervalMin>=60?(cacheIntervalMin/60)+' saat':cacheIntervalMin+' dakika';
+  toast('⏱️ Yenileme aralığı: '+val+' dk','⏱️');
+}
+function saveProxy(){
+  const val=(document.getElementById('proxyInput').value||'').trim();
+  lss('vg_proxy', val);
+  // PROXY_BASE güncelle (runtime)
+  window._proxyBase = val;
+  toast(val ? '✅ Proxy kaydedildi: '+val : '🔴 Proxy kaldırıldı', '🔗');
+}
+
+// Runtime proxy override
+function proxyUrlRuntime(url){
+  const base = window._proxyBase || PROXY_BASE || ls('vg_proxy') || '';
+  if(base && url.startsWith('http://')){
+    return base + encodeURIComponent(url);
+  }
+  return url;
+}
+
+async function clearAllData(){
+  if(!confirm('Tüm veriler silinsin mi? Bu işlem geri alınamaz!')) return;
+  ['vg_extra','vg_favs','vg_recent','vg_shist','vg_vol','vg_sort','vg_grp_alias','vg_cttl','vg_mlib'].forEach(k=>lsd(k));
+  await idbSet('pl',[]); await idbSet('plt',0);
+  location.reload();
+}
+
+// ════════════════════════════════════════
+// KULLANICI YÖNETİMİ
+// ════════════════════════════════════════
+function renderUserList(){
+  const el=document.getElementById('userList'); if(!el) return;
+  const users=getUsers();
+  el.innerHTML='';
+  users.forEach(function(u){
+    const row=document.createElement('div');
+    row.className='user-row';
+
+    const unDiv=document.createElement('div');
+    unDiv.style.cssText='font-size:13px;font-weight:500';
+    unDiv.textContent=u.username;
+
+    const roleSpan=document.createElement('span');
+    roleSpan.className='user-role '+u.role;
+    roleSpan.textContent=u.role;
+
+    const nmDiv=document.createElement('div');
+    nmDiv.style.cssText='font-size:12px;color:var(--txt2)';
+    nmDiv.textContent=u.name;
+
+    let actionEl;
+    if(u.username==='admin'){
+      actionEl=document.createElement('span');
+      actionEl.style.cssText='font-size:11px;color:var(--txt3)';
+      actionEl.textContent='—';
+    } else {
+      actionEl=document.createElement('button');
+      actionEl.className='user-del';
+      actionEl.textContent='Sil';
+      actionEl.onclick=(function(username){
+        return function(){ adminDelUser(username); };
+      })(u.username);
+    }
+
+    row.appendChild(unDiv);
+    row.appendChild(roleSpan);
+    row.appendChild(nmDiv);
+    row.appendChild(actionEl);
+    el.appendChild(row);
+  });
+}
+function adminAddUser(){
+  const un=(document.getElementById('uN').value||'').trim();
+  const nm=(document.getElementById('uNm').value||'').trim();
+  const pw=document.getElementById('uP').value;
+  const ro=document.getElementById('uR').value;
+  if(!un||!nm||!pw){ toast('Tüm alanları doldurun','⚠️'); return; }
+  const users=getUsers();
+  if(users.find(u=>u.username===un)){ toast('Bu kullanıcı adı alınmış','⚠️'); return; }
+  users.push({username:un,name:nm,password:pw,role:ro});
+  saveUsers(users);
+  ['uN','uNm','uP'].forEach(id=>document.getElementById(id).value='');
+  renderUserList(); updateAdminStats();
+  toast('✅ Kullanıcı eklendi: '+un,'✅');
+}
+function adminDelUser(username){
+  if(!confirm(username+' silinsin mi?')) return;
+  saveUsers(getUsers().filter(u=>u.username!==username));
+  renderUserList(); updateAdminStats();
+  toast('Kullanıcı silindi','🗑️');
+}
+
+// ════════════════════════════════════════
+// GRUP DÜZENLEME
+// ════════════════════════════════════════
+function renderGroupList(){
+  const el=document.getElementById('groupList'); if(!el) return;
+  const chs=merged();
+  const groups={};
+  chs.forEach(function(c){ const g=c.grp||'Diğer'; groups[g]=(groups[g]||0)+1; });
+  el.innerHTML='';
+  Object.entries(groups).sort(function(a,b){ return b[1]-a[1]; }).forEach(function(entry){
+    const g=entry[0], cnt=entry[1];
+    const alias=groupAliases[g]||g;
+    const row=document.createElement('div'); row.className='grp-item';
+
+    const nameSpan=document.createElement('span'); nameSpan.className='grp-name';
+    nameSpan.textContent=grpEmoji(g)+' '+alias;
+    if(alias!==g){
+      const small=document.createElement('small');
+      small.style.color='var(--txt3)'; small.textContent=' ('+g+')';
+      nameSpan.appendChild(small);
+    }
+
+    const cntSpan=document.createElement('span'); cntSpan.className='grp-count';
+    cntSpan.textContent=cnt+' kanal';
+
+    const inp=document.createElement('input'); inp.className='grp-rename-input';
+    inp.placeholder='Yeniden adlandır…'; inp.value=(alias!==g?alias:'');
+
+    const btn=document.createElement('button'); btn.className='btn btn-g';
+    btn.style.cssText='font-size:12px;padding:5px 10px'; btn.textContent='Kaydet';
+    btn.onclick=(function(grp,input){ return function(){ saveGroupAlias(grp,input.value); }; })(g,inp);
+
+    row.appendChild(nameSpan); row.appendChild(cntSpan);
+    row.appendChild(inp); row.appendChild(btn);
+    el.appendChild(row);
+  });
+}
+function saveGroupAlias(grp, newName){
+  newName=newName.trim();
+  if(!newName||newName===grp){ delete groupAliases[grp]; } else { groupAliases[grp]=newName; }
+  lss('vg_grp_alias',JSON.stringify(groupAliases));
+  renderGroupList(); renderChannels();
+  toast('✅ Grup adı güncellendi','✅');
+}
+// grpEmoji'de alias kullan
+const _origGrpEmoji=grpEmoji;
+
+// ════════════════════════════════════════
+// KEYBOARD
+// ════════════════════════════════════════
+// ════════════════════════════════════════
+// ADMIN LOGIN (ayrı buton)
+// ════════════════════════════════════════
+function openAdminLogin(){
+  if(isAdmin){
+    // Zaten admin — panele git
+    goPage('admin'); return;
+  }
+  document.getElementById('adminPwErr').style.display='none';
+  document.getElementById('adminPwInput').value='';
+  openModal('adminLoginModal');
+  setTimeout(()=>document.getElementById('adminPwInput').focus(),200);
+}
+function doAdminLogin(){
+  const pw=document.getElementById('adminPwInput').value;
+  if(pw===ADMIN_PW){
+    // Mevcut kullanıcıyı admin yap
+    isAdmin=true;
+    if(curUser) curUser.role='admin';
+    document.getElementById('adminNavBtn').style.display='flex';
+    document.getElementById('mobAdminBtn').style.display='flex';
+    document.getElementById('adminBar').style.display='flex';
+    document.getElementById('adminLoginBtn').classList.add('on');
+    document.getElementById('adminLoginTxt').textContent='ADMİN ✓';
+    closeModal('adminLoginModal');
+    goPage('admin');
+    toast('✅ Admin girişi başarılı!','🔐');
+  } else {
+    document.getElementById('adminPwErr').style.display='block';
+  }
+}
+
+// ── KORUMA ──
+// F12 engelle
+document.addEventListener('keydown',e=>{
+  if(e.key==='F12'){ e.preventDefault(); return; }
+  // Ctrl+U, Ctrl+S
+  if((e.ctrlKey||e.metaKey)&&['u','U','s','S'].includes(e.key)){ e.preventDefault(); return; }
+  // Ctrl+Shift+I/J/C (DevTools)
+  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&['i','I','j','J','c','C'].includes(e.key)){ e.preventDefault(); return; }
+
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT') return;
+  switch(e.code){
+    case 'Space': e.preventDefault(); togglePlay(); break;
+    case 'KeyF': doFS(); break;
+    case 'KeyM': toggleMute(); break;
+    case 'KeyR': restartStream(); break;
+    case 'KeyP': doPiP(); break;
+    case 'KeyN': nextCh(1); break;
+    case 'KeyB': nextCh(-1); break;
+    case 'ArrowUp': e.preventDefault(); { const v=document.getElementById('mainVid'); v.volume=Math.min(1,v.volume+.05); document.querySelector('.vol-slider').value=v.volume*100; } break;
+    case 'ArrowDown': e.preventDefault(); { const v=document.getElementById('mainVid'); v.volume=Math.max(0,v.volume-.05); document.querySelector('.vol-slider').value=v.volume*100; } break;
+  }
+});
+function nextCh(dir){
+  const all=merged(); if(!all.length) return;
+  const idx=curCh?all.findIndex(c=>c.id===curCh.id):-1;
+  let n=idx+dir; if(n<0) n=all.length-1; if(n>=all.length) n=0;
+  goChannel(all[n]);
+}
+
+// Sağ tık engelle
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// Metin seçimi engelle (input/textarea hariç)
+document.addEventListener('selectstart', e => {
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  e.preventDefault();
+});
+
+// Kopyalamayı engelle
+document.addEventListener('copy', e => {
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  e.preventDefault();
+});
+
+// Sürükle-bırak engelle
+document.addEventListener('dragstart', e => e.preventDefault());
+
+// Konsol uyarısı
+setTimeout(function warn(){
+  try{
+    console.warn('%c⛔ DURUN!', 'color:red;font-size:40px;font-weight:bold');
+    console.warn('%cBu alan geliştiriciler içindir. Kodu kopyalamak yasaktır.', 'color:orange;font-size:16px');
+  }catch{}
+  setTimeout(warn, 2000);
+}, 1000);
+</script>
+</body>
+</html>
